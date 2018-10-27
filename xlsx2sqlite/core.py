@@ -156,8 +156,9 @@ class Controller:
     def close_db(self):
         self._db.close_db()
 
-    def create_tables(self):
+    def initialize_db(self):
         [self.create_table(tablename=k) for k in self._collection]
+        [self.insert_values(tablename=k) for k in self._collection]
 
     def drop_tables(self, tables_list):
         [self.drop_table(tablename=k) for k in tables_list]
@@ -193,6 +194,21 @@ class Controller:
                             where_clause="type='view'")
         return q.subset(cols=['type', 'name'])
 
+    def insert_values(self, tablename=None):
+        with self._db as db:
+            # prepare definitions
+            d = Definitions(headers=self.get(tablename).headers,
+                            row=self.get(tablename)[0])
+
+            # insert data into table
+            fields = d.get_fields()
+            data = [tuple([v[0]]) + v[1]
+                    for v in enumerate(self.get(tablename))]
+            db.insert_into(tablename=tablename,
+                           fields=COMMA_DELIM.join(fields.keys()),
+                           args=COMMA_DELIM.join(len(fields) * '?'),
+                           data=data)
+
     def create_table(self, tablename=None):
         # retrieve constraints for the given table
         constraints = self._constraints[tablename.lower()]
@@ -204,12 +220,3 @@ class Controller:
                             unique_keys=constraints)
             # create table in _db
             db.create_table(tablename=tablename, definitions=str(d))
-
-            # insert data into table
-            fields = d.get_fields()
-            data = [tuple([v[0]]) + v[1]
-                    for v in enumerate(self.get(tablename))]
-            db.insert_into(tablename=tablename,
-                           fields=COMMA_DELIM.join(fields.keys()),
-                           args=COMMA_DELIM.join(len(fields) * '?'),
-                           data=data)

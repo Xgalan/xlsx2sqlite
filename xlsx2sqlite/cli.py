@@ -10,15 +10,6 @@ from .core import Controller
 pass_config = click.make_pass_decorator(ConfigModel)
 
 
-def get_imports_config(config):
-    names = list(config.get('names').split(','))
-    return {'worksheets': names,
-            'subset_cols': dict([(name, list(
-                config.get(str(name + '_columns').lower()).split(','))
-                                  ) for name in names])
-            }
-
-
 @click.group()
 @click.argument('ini', required=True, type=click.Path(exists=True))
 @click.pass_context
@@ -35,18 +26,28 @@ def cli(ctx, ini):
 @pass_config
 def initdb(config):
     '''
-    Create tablib.Dataset instances for every worksheet specified in the
-    INI file, then create a Sqlite3 database with tables corresponding
-    to the tables found in the worksheets.
+    Imports tables from every worksheet, then populate
+    the database tables with data from the worksheets.
     '''
-    imports_config = get_imports_config(config)
     controller.import_tables(workbook=config.get('xlsx_file'),
-                             worksheets=imports_config['worksheets'],
-                             subset_cols=imports_config['subset_cols'])
+                             worksheets=config.get_imports()['worksheets'],
+                             subset_cols=config.get_imports()['subset_cols'])
     controller.create_db(config.get('db_file'))
     if config._parser.has_section('CONSTRAINTS'):
         controller.set_constraints(dict(config._parser.items('CONSTRAINTS')))
-    controller.create_tables()
+    controller.initialize_db()
+    controller.close_db()
+
+
+@click.command()
+@pass_config
+def updatedb(config):
+    ''' Upsert of xlsx table on specified database. '''
+    controller.import_tables(workbook=config.get('xlsx_file'),
+                             worksheets=config.get_imports()['worksheets'],
+                             subset_cols=config.get_imports()['subset_cols'])
+    controller.create_db(config.get('db_file'))
+    #TODO upsert operation on sqlite database
     controller.close_db()
 
 
@@ -58,9 +59,8 @@ def drop_tables(config):
     Drop the tables in the database which have a name corresponding
     to the worksheets list in the config file.
     '''
-    imports_config = get_imports_config(config)
     controller.create_db(config.get('db_file'))
-    controller.drop_tables(imports_config['worksheets'])
+    controller.drop_tables(config.get_imports()['worksheets'])
     controller.close_db()
 
 
@@ -123,6 +123,7 @@ def list_def(config, table_type):
 
 
 cli.add_command(initdb)
+cli.add_command(updatedb)
 cli.add_command(drop_tables)
 cli.add_command(create_views)
 cli.add_command(export_view)

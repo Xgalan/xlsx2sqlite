@@ -40,10 +40,20 @@ class ConfigModel:
             if option in self.options:
                 return self.options[option]
             else:
-                return [v[option] for k,v in self.options.items() if option in v][0]
+                return [v[option]
+                        for k,v in self.options.items() if option in v][0]
         except KeyError as e:
             raise KeyError((str(e) + " not in the options list."))
 
+    def get_imports(self):
+        names = list(self.get('names').split(','))
+        return {'worksheets': names,
+                'subset_cols': dict([(name, list(
+                    self.get(str(name + '_columns').lower()).split(','))
+                                      ) for name in names])
+                }
+
     def import_config(self, ini):
         self._parser.read(ini)
-        self.options = {k:dict(self._parser[k]) for k in self._parser.sections()}
+        self.options = {k:dict(self._parser[k])
+                        for k in self._parser.sections()}
