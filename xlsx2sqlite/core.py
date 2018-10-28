@@ -160,6 +160,9 @@ class Controller:
         [self.create_table(tablename=k) for k in self._collection]
         [self.insert_values(tablename=k) for k in self._collection]
 
+    def update_tables(self):
+        [self.replace_values(tablename=k) for k in self._collection]
+
     def drop_tables(self, tables_list):
         [self.drop_table(tablename=k) for k in tables_list]
 
@@ -208,6 +211,21 @@ class Controller:
                            fields=COMMA_DELIM.join(fields.keys()),
                            args=COMMA_DELIM.join(len(fields) * '?'),
                            data=data)
+
+    def replace_values(self, tablename=None):
+        with self._db as db:
+            # prepare definitions
+            d = Definitions(headers=self.get(tablename).headers,
+                            row=self.get(tablename)[0])
+
+            # insert or replace data into table
+            fields = d.get_fields()
+            data = [tuple([v[0]]) + v[1]
+                    for v in enumerate(self.get(tablename))]
+            db.insert_or_replace(tablename=tablename,
+                                 fields=COMMA_DELIM.join(fields.keys()),
+                                 args=COMMA_DELIM.join(len(fields) * '?'),
+                                 data=data)
 
     def create_table(self, tablename=None):
         # retrieve constraints for the given table

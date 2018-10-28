@@ -40,14 +40,23 @@ def initdb(config):
 
 
 @click.command()
+@click.argument('table-name',
+                default='all',
+                type=click.STRING)
 @pass_config
-def updatedb(config):
+def update_data(config, table_name):
     ''' Upsert of xlsx table on specified database. '''
     controller.import_tables(workbook=config.get('xlsx_file'),
                              worksheets=config.get_imports()['worksheets'],
                              subset_cols=config.get_imports()['subset_cols'])
     controller.create_db(config.get('db_file'))
-    #TODO upsert operation on sqlite database
+    # Replace operation on sqlite database
+    if table_name in config.get_imports()['worksheets']:
+        controller.replace_values(table_name)
+        click.echo('Updated table: ' + table_name)
+    else:
+        controller.update_tables()
+        click.echo('Updated all tables.')
     controller.close_db()
 
 
@@ -123,7 +132,7 @@ def list_def(config, table_type):
 
 
 cli.add_command(initdb)
-cli.add_command(updatedb)
+cli.add_command(update_data)
 cli.add_command(drop_tables)
 cli.add_command(create_views)
 cli.add_command(export_view)

@@ -54,10 +54,19 @@ class DatabaseWrapper:
 
     def insert_into(self, tablename=None, fields=None, args=None, data=None):
         ''' Populate the given table with data from the collection. '''
-        sql_insert_into = 'INSERT INTO {tablename} ({fields}) VALUES ({args});'
+        sql_insert_into = 'INSERT INTO {tablename}({fields}) VALUES ({args});'
         self._db.executemany(sql_insert_into.format(tablename=tablename,
                                                     fields=fields,
                                                     args=args),
+                             data)
+
+    def insert_or_replace(self, tablename=None, fields=None, args=None,
+                          data=None):
+        sql_replace = """REPLACE INTO {tablename}({fields}) \
+                         VALUES ({args})"""
+        self._db.executemany(sql_replace.format(tablename=tablename,
+                                                fields=fields,
+                                                args=args),
                              data)
 
     def select(self, columns=None, from_table=None, where=None):

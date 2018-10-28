@@ -3,7 +3,7 @@ import setuptools
 setuptools.setup(
     name="xlsx2sqlite",
     version="0.1.0",
-    url="https://github.com/Xgalan/Xlsx2Sqlite",
+    url="https://github.com/Xgalan/xlsx2sqlite",
 
     author="Erik Mascheri",
     author_email="erik_mascheri@fastmail.com",
