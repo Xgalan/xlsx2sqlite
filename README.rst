@@ -21,7 +21,7 @@ First create a .INI config file that you will pass as an argument to the
 
 This is an example of a configuration file:
 
-``
+.. code:: ini
 [PATHS]
 ; declare the paths of the files to be read.
 root_path = /home/erik/Documenti/movpac
@@ -45,7 +45,6 @@ Test_columns = Codice articolo,U.M.,Quantità
 ; on the database tables.
 ; it's possible to define uniqueness of value on a column.
 Test_UNIQUE = Codice articolo
-``
 
 Installation
 ------------
