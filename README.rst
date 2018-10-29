@@ -21,28 +21,28 @@ First create a .INI config file that you will pass as an argument to the
 
 This is an example of a configuration file:
 
-.. code:: ini
+.. code-block:: ini
 
-[PATHS]
-; declare the paths of the files to be read.
-root_path = /home/user/Documents/example
-xlsx_file = %(root_path)s/example.xlsx
-db_file = %(root_path)s/test.db
-db_url = sqlite:///%(db_file)s
-sql_views = %(root_path)s/views
+	[PATHS]
+	; declare the paths of the files to be read.
+	root_path = /home/user/Documents/example
+	xlsx_file = %(root_path)s/example.xlsx
+	db_file = %(root_path)s/test.db
+	db_url = sqlite:///%(db_file)s
+	sql_views = %(root_path)s/views
 
-[WORKSHEETS]
-; list the worksheets to import from the xlsx file.
-; use comma-separated values.
-names = Articles,Test
-; specify the columns to import from the worksheets, declare as:
-; WorksheetName_columns equal to comma-separated values
-Articles_columns = Code,Article,Description,Notes
-Test_columns = Column 1,Column 2,Column 3
+	[WORKSHEETS]
+	; list the worksheets to import from the xlsx file.
+	; use comma-separated values.
+	names = Articles,Test
+	; specify the columns to import from the worksheets, declare as:
+	; WorksheetName_columns equal to comma-separated values
+	Articles_columns = Code,Article,Description,Notes
+	Test_columns = Column 1,Column 2,Column 3
 
-[CONSTRAINTS]
-; it's possible to define uniqueness of value on a column.
-Articles_UNIQUE = Article
+	[CONSTRAINTS]
+	; it's possible to define uniqueness of value on a column.
+	Articles_UNIQUE = Article
 
 Installation
 ------------
