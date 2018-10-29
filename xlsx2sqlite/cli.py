@@ -1,6 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Command line interface for xlsx2sqlite API.
 
+
+"""
 import click
 
 from .utils import ConfigModel
@@ -14,9 +16,9 @@ pass_config = click.make_pass_decorator(ConfigModel)
 @click.argument('ini', required=True, type=click.Path(exists=True))
 @click.pass_context
 def cli(ctx, ini):
-    '''
-    Generate a Sqlite3 database parsing options from a .INI configuration file.
-    '''
+    """Generate a Sqlite3 database parsing options from a .INI
+    configuration file.
+    """
     ctx.obj = ConfigModel()
     ctx.obj.import_config(ini)
     click.echo('Parsed the config file.')
@@ -25,10 +27,10 @@ def cli(ctx, ini):
 @click.command()
 @pass_config
 def initdb(config):
-    '''
-    Imports tables from every worksheet, then populate
-    the database tables with data from the worksheets.
-    '''
+    """Initialize the sqlite3 database.
+
+    Populates the database with data imported from the worksheets.
+    """
     controller.import_tables(workbook=config.get('xlsx_file'),
                              worksheets=config.get_imports()['worksheets'],
                              subset_cols=config.get_imports()['subset_cols'])
@@ -45,7 +47,7 @@ def initdb(config):
                 type=click.STRING)
 @pass_config
 def update_data(config, table_name):
-    ''' Upsert of xlsx table on specified database. '''
+    """Upsert of xlsx table on specified database table."""
     controller.import_tables(workbook=config.get('xlsx_file'),
                              worksheets=config.get_imports()['worksheets'],
                              subset_cols=config.get_imports()['subset_cols'])
@@ -64,10 +66,11 @@ def update_data(config, table_name):
 @click.confirmation_option(prompt='Are you sure you want to drop the tables?')
 @pass_config
 def drop_tables(config):
-    '''
-    Drop the tables in the database which have a name corresponding
-    to the worksheets list in the config file.
-    '''
+    """Drop the tables in the database.
+
+    Drop only the tables which have a name corresponding
+    to the worksheets specified in the config file.
+    """
     controller.create_db(config.get('db_file'))
     controller.drop_tables(config.get_imports()['worksheets'])
     controller.close_db()
@@ -76,7 +79,11 @@ def drop_tables(config):
 @click.command()
 @pass_config
 def create_views(config):
-    ''' Create views on the database as specified in the INI config file. '''
+    """Create database views.
+
+    Create views on the database loading '*.sql' from the path specified in
+    the INI config file. A file must contain a valid SELECT query.
+    """
     from pathlib import Path
 
     controller.create_db(config.get('db_file'))
@@ -97,14 +104,14 @@ def create_views(config):
               help='Output file for the exported data.')
 @pass_config
 def export_view(config, viewname, file_format, dest):
-    ''' Export the given database view in the specified format. '''
+    """Export the given database view in the specified format."""
 
     export_in = {'csv': lambda _: _.export('csv'),
                  'json': lambda _: _.export('json'),
                  'yaml': lambda _: _.export('yaml')}
 
     controller.create_db(config.get('db_file'))
-    res = controller.select_all(table_name=viewname) #tablib instance
+    res = controller.select_all(table_name=viewname)
     controller.close_db()
     if dest is None and file_format in export_in:
         click.echo(export_in[file_format](res))
@@ -121,7 +128,7 @@ def export_view(config, viewname, file_format, dest):
                 type=click.Choice(['table', 'view']))
 @pass_config
 def list_def(config, table_type):
-    ''' List all tables or list all views in the database. '''
+    """List all tables or list all views in the database."""
     controller.create_db(config.get('db_file'))
     if table_type == 'table':
         res = controller.list_tables()

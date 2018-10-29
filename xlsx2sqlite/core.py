@@ -1,23 +1,25 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Controller class.
 
+"""
 from collections import OrderedDict
 
 import tablib
 
-from .utils import COMMA_DELIM, import_worksheets
+from .utils import import_worksheets
 from .query import DatabaseWrapper
 
 
 
 class Tables:
-    ''' Container class for tablib.Dataset instances. '''
+    """Container class for tablib.Dataset instances."""
     _tables = OrderedDict()
 
     def __iter__(self):
         return iter(self._tables)
 
     def get(self, table):
+        """Get a table by name."""
         return self._tables.get(table, None)
 
     def __contains__(self, key):
@@ -42,7 +44,7 @@ class Tables:
 
 
 class Definitions:
-    ''' Definitions generator for sqlite3 tables. '''
+    """Definitions generator for Sqlite3 tables."""
     COMMA_DELIM = ','
 
     def __init__(self, headers=None, row=None,
@@ -69,15 +71,13 @@ class Definitions:
 
     @staticmethod
     def prepare_name(s):
-        ''' Return a suitable string for using in the database. '''
+        """Return a suitable string for using in the database."""
         s = s.strip()
         return "'" + s.capitalize() + "'"
 
     @staticmethod
     def test_type(value):
-        '''
-        Detect the type of an object and return a Sqlite3 type affinity.
-        '''
+        """Detect the type of an object and return a Sqlite3 type affinity."""
         #TODO: add datetime parsing
         if isinstance(value, str):
             return 'TEXT'
@@ -91,11 +91,14 @@ class Definitions:
             return 'TEXT'
 
     def get_columns_names(self):
-        # prepare column names
+        """Prepare column names."""
         return [self.prepare_name(col) for col in self.headers]
 
     def get_columns_types(self):
-        # detect SQLITE3 datatypes, check the first row of a table instance
+        """Detect Sqlite3 datatypes.
+
+        Detect Sqlite3 type affinity checking the first row of a table instance.
+        """
         return [self.test_type(v) for v in self.row]
 
     def get_fields(self):
@@ -109,6 +112,8 @@ class Definitions:
 
 
 class Controller:
+    COMMA_DELIM = ','
+    
     def __init__(self):
         self._collection = Tables()
         self._db = None

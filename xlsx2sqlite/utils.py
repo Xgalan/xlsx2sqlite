@@ -1,20 +1,28 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Utilities for the command line interface.
 
+The :func:`import_worksheets` function is useful for importing specified
+worksheets from a xlsx file, it uses the 'openpyxl' package.
+
+"""
 import configparser
 
 from openpyxl import load_workbook
 
 
 
-COMMA_DELIM = ','
-
-
 def import_worksheets(workbook=None, worksheets=None):
+    """Import worksheets from a workbook using openpyxl.
+
+    :key workbook: Name of the xlsx file to open read only.
+    :key worksheets: Names of the worksheets to import.
+
+    :returns: A representation of a table with data from the
+              imported worksheets.
+    """
     # load a xlsx file.
     wb = load_workbook(filename=workbook,
                        read_only=True)
-    # import specified worksheets
     worksheets = [wb[ws] for ws in worksheets]
     # import tables from imported worksheets
     tables = {ws.title: [tuple([cell.value for cell in row])
@@ -24,6 +32,8 @@ def import_worksheets(workbook=None, worksheets=None):
 
 
 class ConfigModel:
+    COMMA_DELIM = ','
+    
     def __init__(self, options=None):
         self.options = options
         self._parser = configparser.ConfigParser()
@@ -46,10 +56,10 @@ class ConfigModel:
             raise KeyError((str(e) + " not in the options list."))
 
     def get_imports(self):
-        names = list(self.get('names').split(','))
+        names = list(self.get('names').split(COMMA_DELIM))
         return {'worksheets': names,
                 'subset_cols': dict([(name, list(
-                    self.get(str(name + '_columns').lower()).split(','))
+                    self.get(str(name + '_columns').lower()).split(COMMA_DELIM))
                                       ) for name in names])
                 }
 
