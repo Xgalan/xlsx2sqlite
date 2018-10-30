@@ -5,7 +5,7 @@
 """
 import click
 
-from .utils import ConfigModel
+from .utils import ConfigModel, export_worksheet
 from .core import Controller
 
 
@@ -94,10 +94,9 @@ def create_views(config):
 
 
 @click.command()
-@click.option('-v', 'viewname',
-              required=True,
-              type=click.STRING,
-              help='Please select a valid database view name.')
+@click.argument('viewname',
+                required=True,
+                type=click.STRING)
 @click.option('-f', 'file_format', type=click.STRING,
               help='Desired file format for the exported data.')
 @click.option('-o', 'dest', type=click.File('wb'),
@@ -118,6 +117,10 @@ def export_view(config, viewname, file_format, dest):
     elif file_format in export_in:
         dest.write(bytes(export_in[file_format](res), 'utf8'))
         dest.close()
+        click.echo('Created file: ' + dest.name)
+    elif file_format == 'xlsx':
+        export_worksheet(filename=dest, ws_name=viewname, rows=res)
+        click.echo('Created file: ' + dest.name)
     else:
         click.echo(res)
 
