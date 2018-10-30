@@ -10,6 +10,8 @@ from .utils import import_worksheets
 from .query import DatabaseWrapper
 
 
+COMMA_DELIM = ','
+
 
 class Tables:
     """Container class for tablib.Dataset instances."""
@@ -45,8 +47,6 @@ class Tables:
 
 class Definitions:
     """Definitions generator for Sqlite3 tables."""
-    COMMA_DELIM = ','
-
     def __init__(self, headers=None, row=None,
                  primary_key=None, unique_keys=None):
         self.headers = headers
@@ -112,8 +112,6 @@ class Definitions:
 
 
 class Controller:
-    COMMA_DELIM = ','
-    
     def __init__(self):
         self._collection = Tables()
         self._db = None

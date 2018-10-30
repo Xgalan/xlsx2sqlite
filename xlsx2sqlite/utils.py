@@ -56,11 +56,11 @@ class ConfigModel:
             raise KeyError((str(e) + " not in the options list."))
 
     def get_imports(self):
-        names = list(self.get('names').split(COMMA_DELIM))
+        names = list(self.get('names').split(self.COMMA_DELIM))
         return {'worksheets': names,
                 'subset_cols': dict([(name, list(
-                    self.get(str(name + '_columns').lower()).split(COMMA_DELIM))
-                                      ) for name in names])
+                    self.get(str(name + '_columns').lower()).split(
+                        self.COMMA_DELIM))) for name in names])
                 }
 
     def import_config(self, ini):
