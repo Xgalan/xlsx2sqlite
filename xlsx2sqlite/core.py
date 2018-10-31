@@ -232,7 +232,7 @@ class Controller:
 
     def create_table(self, tablename=None):
         # retrieve constraints for the given table
-        if any(d) is not False:
+        if any(self._constraints) is not False:
             constraints = self._constraints[tablename.lower()]
         # create and populate the database table
         with self._db as db:
