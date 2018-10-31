@@ -5,7 +5,7 @@ The :func:`export_worksheet` function creates a xlsx file with a worksheet
 containing table data, it uses the `openpyxl` package.
 
 The :func:`import_worksheets` function is useful for importing specified
-worksheets from a xlsx file, it uses the 'openpyxl' package.
+worksheets from a xlsx file, it uses the `openpyxl` package.
 
 """
 import configparser
@@ -48,6 +48,8 @@ def import_worksheets(workbook=None, worksheets=None):
 
 
 class ConfigModel:
+    """Representation for accessing the options of the parsed
+    configuration file."""
     COMMA_DELIM = ','
     
     def __init__(self, options=None):
@@ -59,9 +61,21 @@ class ConfigModel:
             yield option
 
     def sections(self):
+        """List all the sections parsed from the INI file.
+
+        :returns: A list of all the sections declared in the INI file.
+        :rtype: list
+        """
         return [section for section in self.options]
 
     def get(self, option):
+        """Retrieve a specific option declared in the INI file.
+
+        :param option: Name of the option to retrieve.
+
+        :returns: The value of the option.
+        :rtype: str
+        """
         try:
             if option in self.options:
                 return self.options[option]
@@ -72,6 +86,15 @@ class ConfigModel:
             raise KeyError((str(e) + " not in the options list."))
 
     def get_imports(self):
+        """Retrieve the worksheets names and a subset of columns as declared.
+
+        :returns: A dictionary with a list of worksheets names accessing the
+                  `worksheets` key; a list of columns names as a representation
+                  for the columns to be retrieved from a worksheet accessing
+                  the `subset_cols` key of the dictionary.
+                  The lists must be declared in the INI configuration file.
+        :rtype: dict
+        """
         names = list(self.get('names').split(self.COMMA_DELIM))
         return {'worksheets': names,
                 'subset_cols': dict([(name, list(
@@ -80,6 +103,16 @@ class ConfigModel:
                 }
 
     def import_config(self, ini):
+        """Parse the configuration declared in the INI file.
+
+        Parse the INI file using the `configparser` module, then creates a
+        dictionary with all the parsed options.
+
+        :param ini: The path of the INI configuration file to parse.
+
+        :returns: All the options retrieved from the INI file.
+        :rtype: dict
+        """
         self._parser.read(ini)
         self.options = {k:dict(self._parser[k])
                         for k in self._parser.sections()}

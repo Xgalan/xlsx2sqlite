@@ -2,7 +2,7 @@
 Command Line Interface
 ======================
 
-Command Line Interface will be documented here.
+Command Line Interface documentation.
 
 
 xlsx2sqlite.cli module
