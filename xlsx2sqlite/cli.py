@@ -1,6 +1,34 @@
 # -*- coding: utf-8 -*-
 """Command line interface for xlsx2sqlite API.
 
+Parse the INI file passed as argument, the configuration file must have
+this sections with this keywords:
+
+.. code-block:: ini
+
+    [PATHS]
+    ; declare the paths of the files to be read.
+    root_path = baserootpath/
+    xlsx_file = %(root_path)s/exampletoimport.xlsx
+    db_file = %(root_path)s/databasename.db
+    db_url = sqlite:///%(db_file)s
+    sql_views = %(root_path)s/views
+
+    [WORKSHEETS]
+    ; list the worksheets to import from the xlsx file.
+    ; use comma-separated values.
+    names = SheetName1,SheetName2
+    ; specify the columns to import from the worksheets, declare as:
+    ; WorksheetName_columns equal to comma-separated values
+    SheetName1_columns = Col1,Col2,Col3
+    SheetName2_columns = Col1,Col2,Col3
+
+Optional constraints section, add in the configuration file if necessary:
+
+.. code-block:: ini
+
+    [CONSTRAINTS]
+    SheetName1_UNIQUE = Col1
 
 """
 import click
