@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Controller class.
+"""Core module. Contains the main controller class.
 
 """
 from collections import OrderedDict
@@ -21,7 +21,10 @@ class Tables:
         return iter(self._tables)
 
     def get(self, table):
-        """Get a table by name."""
+        """Get a table by name.
+
+        :param table: Name of the table.
+        """
         return self._tables.get(table, None)
 
     def __contains__(self, key):
@@ -31,6 +34,12 @@ class Tables:
         return self._tables[key]
 
     def import_tables(self, workbook=None, worksheets=None, subset_cols=None):
+        """Import the specified worksheets into the tables collection.
+
+        :key workbook: Path of the xlsx file to open for import.
+        :key worksheets: List of the worksheets to be imported.
+        :key subset: List of columns in the worksheet to consider for import.
+        """
         tables = import_worksheets(workbook=workbook, worksheets=worksheets)
         for tbl_name,values in tables.items():
             headers = values.pop(0)
@@ -38,10 +47,22 @@ class Tables:
                 *values, headers=headers).subset(cols=subset_cols[tbl_name])
 
     def create_empty_table(self, tablename=None, headers=None):
+        """Creates a tablib.Dataset instance in the collection.
+
+        :key tablename: Name of the table to be created.
+        :key headers: List of labels for the table header.
+        :returns: An empty table.
+        :rtype: tablib.Dataset
+        """
         self._tables[tablename] = tablib.Dataset(headers=headers)
         return self._tables[tablename]
 
     def values_to_table(self, tablename=None, values=None):
+        """Append values to a tablib.Dataset table in the collection.
+
+        :key tablename: Name of the table.
+        :key values: List of values to append.
+        """
         [self._tables[tablename].append(val) for val in values]
 
 
@@ -67,17 +88,33 @@ class Definitions:
             )
 
     def get_primary_key(self):
+        """Get the primary key to use in the database.
+
+        :returns: The name of the primary key with the default Sqlite3
+                  datatype for primary key (`INTEGER PRIMARY KEY`). 
+        :rtype: tuple
+        """
         return (self.primary_key, 'INTEGER PRIMARY KEY')
 
     @staticmethod
     def prepare_name(s):
-        """Return a suitable string for using in the database."""
+        """Return a suitable string for using in the database.
+
+        :param s: A string.
+        :returns: A capitalized form of the string with the leading
+                  and trailing characters removed.
+        """
         s = s.strip()
         return "'" + s.capitalize() + "'"
 
     @staticmethod
     def test_type(value):
-        """Detect the type of an object and return a Sqlite3 type affinity."""
+        """Detect the type of an object and return a Sqlite3 type affinity.
+
+        :param value: An instance to check for affinity.
+        :returns: The name of the Sqlite3 affinity type.
+        :rtype: str
+        """
         #TODO: add datetime parsing
         if isinstance(value, str):
             return 'TEXT'
@@ -102,6 +139,12 @@ class Definitions:
         return [self.test_type(v) for v in self.row]
 
     def get_fields(self):
+        """Get the list of fields for using as columns definitions.
+
+        :returns: A dictionary containing pairs of column names/column types
+                  to be used to create a definition for the database. 
+        :rtype: OrderedDict
+        """
         # map types to column names
         pk = self.get_primary_key()
         d = OrderedDict(zip(self.get_columns_names(),
@@ -128,16 +171,20 @@ class Controller:
         return wrapper
 
     def create_db(self, db_file):
+        """Creates a connection with the specified Sqlite3 database.
+
+        :param db_file: Full path of the Sqlite3 database file, if no path is
+                        given the DatabaseWrapper class will initialize an
+                        in memory database.
+        """
         self._db = DatabaseWrapper(path=db_file)
 
     def set_constraints(self, constraints):
-        '''
-        structure of constraints dict:
-        {
-            'tablename1': {'unique': 'column_name1,column_name2'},
-            ...
-        }
-        '''
+        """Set a representation of the constraints declared in the INI file.
+
+        :param constraints: A dictionary containing table names as keys and
+                            a list of column names as values.
+        """
         if isinstance(constraints, dict):
             d = {}
             [self._constraints.update({k.lower(): {}})
@@ -157,31 +204,65 @@ class Controller:
             raise TypeError
 
     def close_db(self):
+        """Close the connection to the database."""
         self._db.close_db()
 
     def initialize_db(self):
+        """Creates the database tables and populates them with the data
+        imported from the tables in the collection.
+
+        The collection contains tablib.Dataset instances.
+        """
         [self.create_table(tablename=k) for k in self._collection]
         [self.insert_values(tablename=k) for k in self._collection]
 
     def update_tables(self):
+        """Insert or replace the values for all the tables in the database.
+
+        The values are retrieved from the tables in the collection.
+        """
         [self.replace_values(tablename=k) for k in self._collection]
 
     def drop_tables(self, tables_list):
+        """Drop all the database tables with a name in the list.
+
+        :param tables_list: List of tables names to drop from the database.
+        """
         [self.drop_table(tablename=k) for k in tables_list]
 
     def drop_table(self, tablename=None):
+        """Drop the database table with the corresponding name.
+
+        :key tablename: Name of the table to drop from the database.
+        """
         with self._db as db:
             db.drop_table(tablename=tablename)
 
     def create_view(self, viewname=None, select=None):
+        """Create a database view.
+
+        :key viewname: Name of the view.
+        :key select: `SELECT` query statement.
+        """
         with self._db as db:
             db.create_view(viewname=viewname, select=select)
 
     def drop_view(self, viewname=None):
+        """Drop the database view with the corresponding name.
+
+        :key viewname: Name of the view to drop from the database.
+        """
         with self._db as db:
             db.drop_view(viewname=viewname)
 
     def select_all(self, table_name=None, where_clause=None):
+        """Perform a `SELECT *` SQL query on the database.
+
+        :key table_name: Name of the table or view to query.
+        :key where_clause: Valid SQL `WHERE` clause.
+        :returns: A table as a tablib.Dataset instance.
+        :rtype: tablib.Dataset
+        """
         with self._db as db:
             if where_clause is None:
                 q = db.select(from_table=table_name)
@@ -191,11 +272,13 @@ class Controller:
                                   headers=q[0].keys())
 
     def list_tables(self):
+        """List all the tables in the database."""
         q = self.select_all(table_name='sqlite_master',
                             where_clause="type='table'")
         return q.subset(cols=['type', 'name'])
 
     def list_views(self):
+        """List all the views in the database."""
         q = self.select_all(table_name='sqlite_master',
                             where_clause="type='view'")
         return q.subset(cols=['type', 'name'])
@@ -231,6 +314,15 @@ class Controller:
                                  data=data)
 
     def create_table(self, tablename=None):
+        """Create a new table in the database.
+
+        Retrieve the constraints if they exists, then generates the
+        definitions for the SQL query, finally creates the table
+        in the database.
+        The table name must exists in the tables collection.
+
+        :key tablename: Name of the table to be created.
+        """
         # retrieve constraints for the given table
         if any(self._constraints) is False:
             print('No constraints specified.')

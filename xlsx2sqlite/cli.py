@@ -82,8 +82,8 @@ def drop_tables(config):
 def create_views(config):
     """Create database views.
 
-    Create views on the database loading '*.sql' from the path specified in
-    the INI config file. A file must contain a valid SELECT query.
+    Create views on the database loading `*.sql` from the path specified in
+    the INI config file. A file must contain a valid `SELECT` query.
     """
     from pathlib import Path
 
@@ -104,7 +104,15 @@ def create_views(config):
               help='Output file for the exported data.')
 @pass_config
 def export_view(config, viewname, file_format, dest):
-    """Export the given database view in the specified format."""
+    """Export the given database view in the specified format.
+
+    Valid file formats are:
+    
+    - csv
+    - json
+    - yaml
+    - xlsx
+    """
 
     export_in = {'csv': lambda _: _.export('csv'),
                  'json': lambda _: _.export('json'),

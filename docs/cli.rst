@@ -12,3 +12,7 @@ xlsx2sqlite.cli module
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. click:: xlsx2sqlite.cli:cli
+    :prog: xlsx2sqlite
+    :show-nested:

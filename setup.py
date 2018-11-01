@@ -34,7 +34,8 @@ setuptools.setup(
         "openpyxl==2.5.8",
         "tablib==0.12.1",
         "Click==7.0",
-        "sphinx==1.8.1"
+        "sphinx==1.8.1",
+        "sphinx-click==1.2.0",
         ],
 
     classifiers=[
