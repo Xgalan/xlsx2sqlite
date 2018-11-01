@@ -236,7 +236,8 @@ class Controller:
         :key tablename: Name of the table to drop from the database.
         """
         with self._db as db:
-            db.drop_table(tablename=tablename)
+            db.drop_entity(entity_name=tablename,
+                           entity_type='TABLE')
 
     def create_view(self, viewname=None, select=None):
         """Create a database view.
@@ -253,7 +254,8 @@ class Controller:
         :key viewname: Name of the view to drop from the database.
         """
         with self._db as db:
-            db.drop_view(viewname=viewname)
+            db.drop_entity(entity_name=viewname,
+                           entity_type='VIEW')
 
     def select_all(self, table_name=None, where_clause=None):
         """Perform a `SELECT *` SQL query on the database.
@@ -268,20 +270,31 @@ class Controller:
                 q = db.select(from_table=table_name)
             else:
                 q = db.select(from_table=table_name, where=where_clause)
-            return tablib.Dataset(*[tuple(row) for row in q],
-                                  headers=q[0].keys())
+            if q:
+                return tablib.Dataset(*[tuple(row) for row in q],
+                                      headers=q[0].keys())
+            else:
+                return None
 
-    def list_tables(self):
-        """List all the tables in the database."""
-        q = self.select_all(table_name='sqlite_master',
-                            where_clause="type='table'")
-        return q.subset(cols=['type', 'name'])
+    def ls_entities(self, entity_type=None):
+        """List all the entities in the database.
 
-    def list_views(self):
-        """List all the views in the database."""
-        q = self.select_all(table_name='sqlite_master',
-                            where_clause="type='view'")
-        return q.subset(cols=['type', 'name'])
+        :key entity_type: Type of the entity to list.
+        :returns: A table as a tablib.Dataset instance.
+        :rtype: tablib.Dataset
+        """
+        if entity_type in ['table', 'view']:
+            clause = "type='{ent_type}'"
+            q = self.select_all(table_name='sqlite_master',
+                                where_clause=clause.format(
+                                    ent_type=entity_type)
+                                )
+        else:
+            q = self.select_all(table_name='sqlite_master')
+        if q:
+            return q.subset(cols=['type', 'name'])
+        else:
+            return None        
 
     def insert_values(self, tablename=None):
         with self._db as db:

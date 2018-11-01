@@ -137,17 +137,17 @@ def export_view(config, viewname, file_format, dest):
 @click.command()
 @click.argument('table-type',
                 required=True,
-                type=click.Choice(['table', 'view']))
+                type=click.Choice(['table', 'view', 'all']))
 @pass_config
 def list_def(config, table_type):
     """List all tables or list all views in the database."""
     controller.create_db(config.get('db_file'))
-    if table_type == 'table':
-        res = controller.list_tables()
+    if table_type == 'all':
+        res = controller.ls_entities()
     else:
-        res = controller.list_views()
+        res = controller.ls_entities(entity_type=table_type)
     controller.close_db()
-    click.echo(res)
+    click.echo(res) if res else click.echo('Not found any ' + table_type)
 
 
 cli.add_command(initdb)

@@ -32,7 +32,7 @@ class DatabaseWrapper:
         return True
 
     def close_db(self):
-        """Closes the connection to the Sqlite3 database."""
+        """Closes the connection to the database."""
         self._db.close()
 
     def create_table(self, tablename=None, definitions=None):
@@ -147,32 +147,25 @@ class DatabaseWrapper:
                                    )
         return cur.fetchall()
 
-    def drop_view(self, viewname=None):
-        """Drop the specified database view.
+    def drop_entity(self, entity_name=None, entity_type=None):
+        """Drop the specified entity from the database.
 
-        The query executed is in this form:
-
-        .. code-block:: sql
-
-            DROP VIEW IF EXISTS viewname;
-
-        :key viewname: Name of the database view to drop.
-        """
-        sql_drop_table = 'DROP VIEW IF EXISTS {viewname};'
-        self._db.execute(sql_drop_view.format(viewname=viewname))
-        print('Removed view: ' + viewname)
-
-    def drop_table(self, tablename=None):
-        """Drop the specified database view.
-
-        The query executed is in this form:
+        If the entity type is `TABLE` the query is:
 
         .. code-block:: sql
 
-            DROP TABLE IF EXISTS tablename;
+            DROP TABLE IF EXISTS entity_name;
 
-        :key tablename: Name of the database table to drop.
+        If the entity type is `VIEW` the query is:
+
+        .. code-block:: sql
+
+            DROP VIEW IF EXISTS entity_name;
+
+        :key entity_name: Name of the entity to drop.
+        :key entity_type: Type of the entity to drop.
         """
-        sql_drop_table = 'DROP TABLE IF EXISTS {tablename};'
-        self._db.execute(sql_drop_table.format(tablename=tablename))
-        print('Deleted table: ' + tablename)
+        sql_drop = 'DROP {entity} IF EXISTS {name};'
+        if entity_type in ['TABLE', 'VIEW']:
+            self._db.execute(sql_drop.format(entity=entity_type,
+                                             name=entity_name))
