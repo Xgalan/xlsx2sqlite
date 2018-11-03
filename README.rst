@@ -8,7 +8,7 @@ xlsx2sqlite
 
 Generate a Sqlite3 database from a Office Open XML file.
 Read the
-`xlsx2sqlite documentation <http://erik_mascheri.fastmail.com.user.fm/maker/index.html>`_.
+`xlsx2sqlite documentation <http://erik_mascheri.fastmail.com.user.fm/maker/docs/xlsx2sqlite/index.html>`_.
 
 Usage
 -----

@@ -36,6 +36,7 @@ setuptools.setup(
         "Click==7.0",
         "sphinx==1.8.1",
         "sphinx-click==1.2.0",
+        "pytest==3.9.3",
         ],
 
     classifiers=[
