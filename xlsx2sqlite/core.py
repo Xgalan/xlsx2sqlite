@@ -218,7 +218,9 @@ class Controller:
         """
         if update_only is False:
             [self.create_table(tablename=k) for k in self._collection]
-        [self.insert_or_replace(tablename=k) for k in self._collection]
+            [self.insert_into(tablename=k) for k in self._collection]
+        else:
+            [self.insert_or_replace(tablename=k) for k in self._collection]
 
     def drop_tables(self, tables_list):
         """Drop all the database tables with a name in the list.

@@ -110,6 +110,13 @@ class DatabaseWrapper:
         if entity_type in ['TABLE', 'VIEW']:
             self._execute(sql_query, parameters, messages)
 
+    def _executemany(self, query, parameters, data):
+        try:
+            self._db.executemany(query.format(**parameters), data)
+        except sqlite3.OperationalError as e:
+            self._db.rollback()
+            raise sqlite3.OperationalError(str(e))
+
     def insert_into(self, tablename=None, fields=None, args=None, data=None):
         """Populate the given table with data from the collection.
 
@@ -120,10 +127,8 @@ class DatabaseWrapper:
                    to the SQL statement.
         """
         sql_query = 'INSERT INTO {tablename}({fields}) VALUES ({args});'
-        self._db.executemany(sql_query.format(tablename=tablename,
-                                              fields=fields,
-                                              args=args),
-                             data)
+        parameters = {'tablename': tablename, 'fields': fields, 'args': args}
+        self._db.executemany(sql_query, parameters, data)
 
     def insert_or_replace(self, tablename=None, fields=None, args=None,
                           data=None):
@@ -135,12 +140,9 @@ class DatabaseWrapper:
         :key data: List of values to be passed as arguments
                    to the SQL statement.
         """
-        sql_query = """REPLACE INTO {tablename}({fields}) \
-                         VALUES ({args})"""
-        self._db.executemany(sql_query.format(tablename=tablename,
-                                                fields=fields,
-                                                args=args),
-                             data)
+        sql_query = """REPLACE INTO {tablename}({fields}) VALUES ({args});"""
+        parameters = {'tablename': tablename, 'fields': fields, 'args': args}
+        self._db.executemany(sql_query, parameters, data)
 
     def select(self, columns=None, from_table=None, where=None):
         """Executes a `SELECT` query on the database.
