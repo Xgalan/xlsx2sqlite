@@ -119,15 +119,15 @@ class DatabaseWrapper:
         :key data: List of values to be passed as arguments
                    to the SQL statement.
         """
-        sql_insert_into = 'INSERT INTO {tablename}({fields}) VALUES ({args});'
-        self._db.executemany(sql_insert_into.format(tablename=tablename,
-                                                    fields=fields,
-                                                    args=args),
+        sql_query = 'INSERT INTO {tablename}({fields}) VALUES ({args});'
+        self._db.executemany(sql_query.format(tablename=tablename,
+                                              fields=fields,
+                                              args=args),
                              data)
 
     def insert_or_replace(self, tablename=None, fields=None, args=None,
                           data=None):
-        """Perform a `REPLACE` operation on the sqlite3 database.
+        """Perform a `REPLACE` operation on the database.
 
         :key tablename: Name of the table to insert values into.
         :key fields: List of fields as accepted by the SQL language of Sqlite3.
@@ -135,9 +135,9 @@ class DatabaseWrapper:
         :key data: List of values to be passed as arguments
                    to the SQL statement.
         """
-        sql_replace = """REPLACE INTO {tablename}({fields}) \
+        sql_query = """REPLACE INTO {tablename}({fields}) \
                          VALUES ({args})"""
-        self._db.executemany(sql_replace.format(tablename=tablename,
+        self._db.executemany(sql_query.format(tablename=tablename,
                                                 fields=fields,
                                                 args=args),
                              data)

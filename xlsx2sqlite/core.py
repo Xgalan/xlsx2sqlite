@@ -207,21 +207,18 @@ class Controller:
         """Close the connection to the database."""
         self._db.close_db()
 
-    def initialize_db(self):
+    def initialize_db(self, update_only=False):
         """Creates the database tables and populates them with the data
         imported from the tables in the collection.
 
+        :key update_only: Insert or replace the values for all the tables
+                          in the database.
+
         The collection contains tablib.Dataset instances.
         """
-        [self.create_table(tablename=k) for k in self._collection]
-        [self.insert_values(tablename=k) for k in self._collection]
-
-    def update_tables(self):
-        """Insert or replace the values for all the tables in the database.
-
-        The values are retrieved from the tables in the collection.
-        """
-        [self.replace_values(tablename=k) for k in self._collection]
+        if update_only is False:
+            [self.create_table(tablename=k) for k in self._collection]
+        [self.insert_or_replace(tablename=k) for k in self._collection]
 
     def drop_tables(self, tables_list):
         """Drop all the database tables with a name in the list.
@@ -296,22 +293,7 @@ class Controller:
         else:
             return None        
 
-    def insert_values(self, tablename=None):
-        with self._db as db:
-            # prepare definitions
-            d = Definitions(headers=self.get(tablename).headers,
-                            row=self.get(tablename)[0])
-
-            # insert data into table
-            fields = d.get_fields()
-            data = [tuple([v[0]]) + v[1]
-                    for v in enumerate(self.get(tablename))]
-            db.insert_into(tablename=tablename,
-                           fields=COMMA_DELIM.join(fields.keys()),
-                           args=COMMA_DELIM.join(len(fields) * '?'),
-                           data=data)
-
-    def replace_values(self, tablename=None):
+    def insert_or_replace(self, tablename=None):
         with self._db as db:
             # prepare definitions
             d = Definitions(headers=self.get(tablename).headers,
