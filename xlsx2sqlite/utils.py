@@ -37,9 +37,11 @@ def import_worksheets(workbook=None, worksheets=None):
               imported worksheets.
     """
     # load a xlsx file.
-    wb = load_workbook(filename=workbook,
-                       read_only=True)
-    worksheets = [wb[ws] for ws in worksheets]
+    wb = load_workbook(filename=workbook, read_only=True)
+    if worksheets is not None:
+        worksheets = [wb[ws] for ws in worksheets]
+    else:
+        worksheets = [wb[ws] for ws in wb.sheetnames]
     # import tables from imported worksheets
     tables = {ws.title: [tuple([cell.value for cell in row])
                          for row in ws.rows] for ws in worksheets}
@@ -114,5 +116,6 @@ class ConfigModel:
         :rtype: dict
         """
         self._parser.read(ini)
+        self._inipath = ini
         self.options = {k:dict(self._parser[k])
                         for k in self._parser.sections()}

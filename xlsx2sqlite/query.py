@@ -35,6 +35,14 @@ class DatabaseWrapper:
         """Closes the connection to the database."""
         self._db.close()
 
+    def _execute(self, query, parameters, messages):
+        try:
+            self._db.execute(query.format(**parameters))
+            print(messages['success'])                            
+        except sqlite3.OperationalError as e:
+            self._db.rollback()
+            raise sqlite3.OperationalError(messages['error'] + str(e))
+
     def create_table(self, tablename=None, definitions=None):
         """Prepare and execute a CREATE TABLE sql query for a given table
         instance.
@@ -49,14 +57,11 @@ class DatabaseWrapper:
         :key definitions: Definitions as accepted by the Sqlite3 SQL
                           query dialect.
         """
-        sql_create_table = 'CREATE TABLE IF NOT EXISTS {tablename} ({definitions});'
-        try:
-            self._db.execute(sql_create_table.format(tablename=tablename,
-                                                     definitions=definitions))
-            print('Created table: ' + tablename)
-        except sqlite3.OperationalError as e:
-            self._db.rollback()
-            raise sqlite3.OperationalError('Error when creating table: ' + str(e))
+        sql_query = 'CREATE TABLE IF NOT EXISTS {name} ({definitions});'
+        parameters = {'name': tablename, 'definitions': definitions}
+        messages = {'error': 'Error when creating table: ',
+                    'success': 'Created table: ' + parameters['name']}
+        self._execute(sql_query, parameters, messages)
 
     def create_view(self, viewname=None, select=None):
         """The CREATE VIEW command assigns a name to a pre-packaged SELECT
@@ -73,15 +78,37 @@ class DatabaseWrapper:
         :key select: `SELECT` SQL query to use as argument in the
                      `CREATE VIEW IF NOT EXISTS` statement.
         """
-        sql_create_view = 'CREATE VIEW IF NOT EXISTS {viewname} AS {select};'
-        try:
-            self._db.execute(sql_create_view.format(viewname=viewname,
-                                                    select=select))
-            print('Created view: ' + viewname)
-        except sqlite3.OperationalError as e:
-            self._db.rollback()
-            raise sqlite3.OperationalError(
-                'Error when creating view: ' + str(e))
+        sql_query = 'CREATE VIEW IF NOT EXISTS {name} AS {select};'
+        parameters = {'name': viewname, 'select':  select}
+        messages = {'error': 'Error when creating view: ',
+                    'success': 'Created view: ' + parameters['name']}
+        self._execute(sql_query, parameters, messages)
+
+    def drop_entity(self, entity_name=None, entity_type=None):
+        """Drop the specified entity from the database.
+
+        If the entity type is `TABLE` the query is:
+
+        .. code-block:: sql
+
+            DROP TABLE IF EXISTS entity_name;
+
+        If the entity type is `VIEW` the query is:
+
+        .. code-block:: sql
+
+            DROP VIEW IF EXISTS entity_name;
+
+        :key entity_name: Name of the entity to drop.
+        :key entity_type: Type of the entity to drop.
+        """
+        sql_query = 'DROP {entity} IF EXISTS {name};'
+        parameters = {'entity': entity_type,
+                      'name': entity_name}
+        messages = {'error': 'Error when deleting ' + entity_type + ' ' + entity_name,
+                    'success': 'Deleted ' + entity_type + ' ' + entity_name}
+        if entity_type in ['TABLE', 'VIEW']:
+            self._execute(sql_query, parameters, messages)
 
     def insert_into(self, tablename=None, fields=None, args=None, data=None):
         """Populate the given table with data from the collection.
@@ -132,40 +159,13 @@ class DatabaseWrapper:
         """
         if columns is None:
             columns = '*'
-        if where is None:
-            sql_select = 'SELECT {columns} FROM {from_table};'
-            self._db.row_factory = sqlite3.Row
-            cur = self._db.execute(sql_select.format(columns=columns,
-                                                     from_table=from_table)
-                                   )
+        if where:
+            sql_query = 'SELECT {columns} FROM {from_table} WHERE {where};'
+            conditions = {'columns': columns, 'from_table': from_table,
+                          'where': where}
         else:
-            sql_select = 'SELECT {columns} FROM {from_table} WHERE {where};'
-            self._db.row_factory = sqlite3.Row
-            cur = self._db.execute(sql_select.format(columns=columns,
-                                                     from_table=from_table,
-                                                     where=where)
-                                   )
+            sql_query = 'SELECT {columns} FROM {from_table};'
+            conditions = {'columns': columns, 'from_table': from_table}
+        self._db.row_factory = sqlite3.Row
+        cur = self._db.execute(sql_query.format(**conditions))
         return cur.fetchall()
-
-    def drop_entity(self, entity_name=None, entity_type=None):
-        """Drop the specified entity from the database.
-
-        If the entity type is `TABLE` the query is:
-
-        .. code-block:: sql
-
-            DROP TABLE IF EXISTS entity_name;
-
-        If the entity type is `VIEW` the query is:
-
-        .. code-block:: sql
-
-            DROP VIEW IF EXISTS entity_name;
-
-        :key entity_name: Name of the entity to drop.
-        :key entity_type: Type of the entity to drop.
-        """
-        sql_drop = 'DROP {entity} IF EXISTS {name};'
-        if entity_type in ['TABLE', 'VIEW']:
-            self._db.execute(sql_drop.format(entity=entity_type,
-                                             name=entity_name))

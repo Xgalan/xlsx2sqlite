@@ -28,12 +28,33 @@ def cli(ctx, ini):
 @click.command()
 @pass_config
 def initdb(config):
-    """Initialize the sqlite3 database.
+    """Initialize the database.
 
     Populates the database with data imported from the worksheets.
     """
     controller.import_tables(workbook=config.get('xlsx_file'),
                              worksheets=config.get_imports()['worksheets'],
+                             subset_cols=config.get_imports()['subset_cols'])
+    controller.create_db(config.get('db_file'))
+    if config._parser.has_section('CONSTRAINTS'):
+        controller.set_constraints(dict(config._parser.items('CONSTRAINTS')))
+    controller.initialize_db()
+    controller.close_db()
+
+
+@click.command()
+@pass_config
+def wizard(config):
+    """Create a new database using a wizard.
+
+    Populates the database with data imported from the worksheets.
+    """
+    from pathlib import PurePath
+
+    workbook=PurePath(config.get('xlsx_file'))
+    controller.create_empty_table(tablename=workbook.stem)
+    controller.import_tables(workbook=config.get('xlsx_file'),
+                             worksheets=None,
                              subset_cols=config.get_imports()['subset_cols'])
     controller.create_db(config.get('db_file'))
     if config._parser.has_section('CONSTRAINTS'):
@@ -151,6 +172,7 @@ def list_def(config, table_type):
 
 
 cli.add_command(initdb)
+cli.add_command(wizard)
 cli.add_command(update_data)
 cli.add_command(drop_tables)
 cli.add_command(create_views)

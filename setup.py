@@ -31,7 +31,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
 
     install_requires=[
-        "openpyxl==2.5.8",
+        "openpyxl==2.5.14",
         "tablib==0.12.1",
         "Click==7.0",
         "sphinx==1.8.1",
