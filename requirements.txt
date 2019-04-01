@@ -14,7 +14,7 @@ Jinja2==2.10
 MarkupSafe==1.0
 more-itertools==4.3.0
 odfpy==1.3.6
-openpyxl==2.5.14
+openpyxl==2.5.8
 packaging==18.0
 pathlib2==2.3.2
 pbr==5.1.0
@@ -25,7 +25,7 @@ Pygments==2.2.0
 pyparsing==2.3.0
 pytest==3.9.3
 pytz==2018.7
-pyYAML>=4.2b1
+PyYAML==3.13
 requests==2.20.0
 six==1.11.0
 snowballstemmer==1.2.1
@@ -36,5 +36,5 @@ tablib==0.12.1
 unicodecsv==0.14.1
 urllib3==1.24
 xlrd==1.1.0
--e git+https://github.com/Xgalan/xlsx2sqlite.git@d45b7e41ad7177c20b3754bd36b3417d1b50f085#egg=xlsx2sqlite
+-e git+https://github.com/Xgalan/xlsx2sqlite.git@4b111e000a60a1fe8127632d08f6edbae65bc86c#egg=xlsx2sqlite
 xlwt==1.3.0
