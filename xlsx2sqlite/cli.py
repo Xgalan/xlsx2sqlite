@@ -43,7 +43,7 @@ def create_or_update(config, table_name):
     if table_name:
         # Replace operation on sqlite database
         if table_name in config.get_imports()['worksheets']:
-            controller.insert_or_replace(table_name)
+            controller.insert_or_replace(tablename=table_name)
             click.echo('Updated table: ' + table_name)
         elif table_name == 'update-all':
             controller.initialize_db(update_only=True)

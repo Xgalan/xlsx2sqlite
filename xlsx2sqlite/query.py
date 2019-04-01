@@ -128,7 +128,7 @@ class DatabaseWrapper:
         """
         sql_query = 'INSERT INTO {tablename}({fields}) VALUES ({args});'
         parameters = {'tablename': tablename, 'fields': fields, 'args': args}
-        self._db.executemany(sql_query, parameters, data)
+        self._executemany(sql_query, parameters, data)
 
     def insert_or_replace(self, tablename=None, fields=None, args=None,
                           data=None):
@@ -142,7 +142,7 @@ class DatabaseWrapper:
         """
         sql_query = """REPLACE INTO {tablename}({fields}) VALUES ({args});"""
         parameters = {'tablename': tablename, 'fields': fields, 'args': args}
-        self._db.executemany(sql_query, parameters, data)
+        self._executemany(sql_query, parameters, data)
 
     def select(self, columns=None, from_table=None, where=None):
         """Executes a `SELECT` query on the database.
