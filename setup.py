@@ -37,6 +37,7 @@ setuptools.setup(
         "sphinx==1.8.5",
         "sphinx-click==1.4.1",
         "pytest==3.10.1",
+        "PyYAML==5.1",
         ],
 
     classifiers=[
