@@ -31,7 +31,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
 
     install_requires=[
-        "openpyxl==2.5.14",
+        "openpyxl==2.6.2",
         "tablib==0.12.1",
         "Click==7.0",
         "sphinx==1.8.5",
@@ -45,7 +45,6 @@ setuptools.setup(
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
