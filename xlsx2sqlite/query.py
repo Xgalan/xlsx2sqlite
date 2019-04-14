@@ -163,10 +163,10 @@ class DatabaseWrapper:
         conditions = {'columns': columns, 'from_table': from_table}
         sql_query = self.SQL_QUERY['select_from']
         if columns is None:
-            columns = '*'
+            conditions['columns'] = '*'
         if where:
-            sql_query.replace(';', ' WHERE {where};')
-            conditions['where'] = where            
+            conditions['where'] = where
+            sql_query = sql_query.replace(';', ' WHERE {where};')
         self._db.row_factory = sqlite3.Row
         cur = self._db.execute(sql_query.format(**conditions))
         return cur.fetchall()

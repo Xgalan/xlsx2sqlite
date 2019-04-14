@@ -262,11 +262,11 @@ class Controller:
         :returns: A table as a tablib.Dataset instance.
         :rtype: tablib.Dataset
         """
+        parameters = {'from_table': table_name}
         with self._db as db:
-            if where_clause is None:
-                q = db.select(from_table=table_name)
-            else:
-                q = db.select(from_table=table_name, where=where_clause)
+            if where_clause:
+                parameters['where'] = where_clause
+            q = db.select(**parameters)
             if q:
                 return tablib.Dataset(*[tuple(row) for row in q],
                                       headers=q[0].keys())
@@ -280,14 +280,11 @@ class Controller:
         :returns: A table as a tablib.Dataset instance.
         :rtype: tablib.Dataset
         """
+        parameters = {'table_name': 'sqlite_master'}
         if entity_type in ['table', 'view']:
-            clause = "type='{ent_type}'"
-            q = self.select_all(table_name='sqlite_master',
-                                where_clause=clause.format(
-                                    ent_type=entity_type)
-                                )
-        else:
-            q = self.select_all(table_name='sqlite_master')
+            parameters['where_clause'] = "type='{ent_type}'".format(
+                ent_type=entity_type)
+        q = self.select_all(**parameters)
         if q:
             return q.subset(cols=['type', 'name'])
         else:
