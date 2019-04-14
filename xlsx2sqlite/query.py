@@ -17,6 +17,7 @@ class DatabaseWrapper:
         'drop_entity': 'DROP {entity} IF EXISTS {name};',
         'insert_into': 'INSERT INTO {tablename}({fields}) VALUES ({args});',
         'replace': """REPLACE INTO {tablename}({fields}) VALUES ({args});""",
+        'select_from': 'SELECT {columns} FROM {from_table};',
         }
 
     def __init__(self, path=None):
@@ -106,8 +107,7 @@ class DatabaseWrapper:
         :key entity_name: Name of the entity to drop.
         :key entity_type: Type of the entity to drop.
         """
-        parameters = {'entity': entity_type,
-                      'name': entity_name}
+        parameters = {'entity': entity_type, 'name': entity_name}
         messages = {'error': 'Error when deleting ' + entity_type + ' ' + entity_name,
                     'success': 'Deleted ' + entity_type + ' ' + entity_name}
         if entity_type in ['TABLE', 'VIEW']:
@@ -160,15 +160,13 @@ class DatabaseWrapper:
         :returns: A sqlite3 cursor containing the results of the query, if any.
         :rtype: object
         """
+        conditions = {'columns': columns, 'from_table': from_table}
+        sql_query = self.SQL_QUERY['select_from']
         if columns is None:
             columns = '*'
         if where:
-            sql_query = 'SELECT {columns} FROM {from_table} WHERE {where};'
-            conditions = {'columns': columns, 'from_table': from_table,
-                          'where': where}
-        else:
-            sql_query = 'SELECT {columns} FROM {from_table};'
-            conditions = {'columns': columns, 'from_table': from_table}
+            sql_query.replace(';', ' WHERE {where};')
+            conditions['where'] = where            
         self._db.row_factory = sqlite3.Row
         cur = self._db.execute(sql_query.format(**conditions))
         return cur.fetchall()
