@@ -108,6 +108,22 @@ def create_views(config):
 
 
 @click.command()
+@click.confirmation_option(prompt='Are you sure you want to drop the views?')
+@pass_config
+def drop_views(config):
+    """Drop the views in the database.
+
+    Drop all the views of the database.
+    """
+    from pathlib import Path
+
+    controller.create_db(config.get('db_file'))
+    p = Path(config.get('sql_views'))
+    [controller.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
+    controller.close_db()
+
+
+@click.command()
 @click.argument('viewname',
                 required=True,
                 type=click.STRING)
@@ -166,6 +182,7 @@ def list_def(config, table_type):
 cli.add_command(create_or_update)
 cli.add_command(wizard)
 cli.add_command(drop_tables)
+cli.add_command(drop_views)
 cli.add_command(create_views)
 cli.add_command(export_view)
 cli.add_command(list_def)
