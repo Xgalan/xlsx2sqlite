@@ -18,7 +18,7 @@ import setuptools
 
 setuptools.setup(
     name="xlsx2sqlite",
-    version="0.1.0",
+    version="0.1.1",
     url="https://github.com/Xgalan/xlsx2sqlite",
 
     author="Erik Mascheri",
@@ -31,24 +31,25 @@ setuptools.setup(
     packages=setuptools.find_packages(),
 
     install_requires=[
-        "openpyxl==2.6.2",
-        "tablib==0.12.1",
-        "Click==7.0",
-        "sphinx==1.8.5",
-        "sphinx-click==1.4.1",
-        "pytest==3.10.1",
-        "PyYAML==5.1",
-        "Jinja2==2.10.1",
+        "openpyxl==3.0.7",
+        "tablib==3.0.0",
+        "Click==7.1.2",
+        "sphinx==3.5.3",
+        "sphinx-click==2.7.1",
+        "pytest==6.2.2",
         ],
+
+    python_requires='>=3.6',
 
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
 
     entry_points='''
