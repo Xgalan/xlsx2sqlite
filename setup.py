@@ -30,13 +30,18 @@ setuptools.setup(
 
     packages=setuptools.find_packages(),
 
+    setup_requires = [
+        'wheel',
+        'Sphinx',
+        'sphinx-click',
+        'pytest',
+    ],
+
     install_requires=[
-        "openpyxl==3.0.7",
+        "openpyxl>=3,<3.1",
         "tablib==3.0.0",
-        "Click==7.1.2",
-        # 'Sphinx',
-        # 'sphinx-click',
-        ],
+        "Click>=7,<8",
+    ],
 
     python_requires='>=3.6',
 
