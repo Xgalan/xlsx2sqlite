@@ -44,7 +44,10 @@ class DatabaseWrapper:
 
     def _execute(self, query, parameters, messages):
         try:
-            self._db.execute(query.format(**parameters))
+            q = query.format(**parameters)
+            if q.endswith(';;'):
+                q = q[:-1]
+            self._db.execute(q)
             print(messages['success'])                            
         except sqlite3.OperationalError as e:
             self._db.rollback()
