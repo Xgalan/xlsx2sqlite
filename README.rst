@@ -8,7 +8,7 @@ xlsx2sqlite
 
 Generate a Sqlite3 database from a Office Open XML file.
 Read the
-`xlsx2sqlite documentation <http://erik_mascheri.fastmail.com.user.fm/maker/docs/xlsx2sqlite/index.html>`_.
+`xlsx2sqlite documentation <https://xlsx2sqlite.readthedocs.io/>`_.
 
 Usage
 -----
@@ -70,7 +70,7 @@ and `Tablib <http://docs.python-tablib.org/en/latest/>`_.
 Compatibility
 -------------
 
-`xlsx2sqlite` is compatible with Python 3.4+.
+`xlsx2sqlite` is compatible with Python 3.6+.
 
 Licence
 -------
@@ -80,4 +80,4 @@ GPLv3
 Authors
 -------
 
-`xlsx2sqlite` was written by `Erik Mascheri <erik_mascheri@fastmail.com>`_.
+`xlsx2sqlite` was written by `Erik Mascheri <erik.mascheri@gmail.com>`_.
