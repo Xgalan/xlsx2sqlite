@@ -6,8 +6,8 @@ executes the choosen command.
 """
 import click
 
-from .utils import ConfigModel, export_worksheet
-from .core import Controller
+from xlsx2sqlite.utils import ConfigModel, export_worksheet
+from xlsx2sqlite.core import Controller
 
 
 pass_config = click.make_pass_decorator(ConfigModel)

@@ -6,8 +6,8 @@ from collections import OrderedDict
 
 import tablib
 
-from .utils import import_worksheets
-from .query import DatabaseWrapper
+from xlsx2sqlite.utils import import_worksheets
+from xlsx2sqlite.query import DatabaseWrapper
 
 
 COMMA_DELIM = ','

@@ -22,7 +22,7 @@ setuptools.setup(
     url="https://github.com/Xgalan/xlsx2sqlite",
 
     author="Erik Mascheri",
-    author_email="erik_mascheri@fastmail.com",
+    author_email="erik.mascheri@gmail.com",
 
     license='GPLv3',
     description="Generate a Sqlite3 database from a Office Open XML file.",
