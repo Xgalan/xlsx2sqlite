@@ -34,9 +34,6 @@ setuptools.setup(
         "openpyxl==3.0.7",
         "tablib==3.0.0",
         "Click==7.1.2",
-        "sphinx==3.5.3",
-        "sphinx-click==2.7.1",
-        "pytest==6.2.2",
         ],
 
     python_requires='>=3.6',
