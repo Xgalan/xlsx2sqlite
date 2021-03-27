@@ -30,14 +30,6 @@ setuptools.setup(
     long_description=open('README.rst').read(),
 
     packages=setuptools.find_packages(),
-
-    setup_requires = [
-        'wheel',
-        'Sphinx',
-        'sphinx-click',
-        'pytest',
-    ],
-
     install_requires=[
         "openpyxl>=3,<3.1",
         "tablib==3.0.0",
