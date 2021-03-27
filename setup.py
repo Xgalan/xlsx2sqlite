@@ -15,10 +15,11 @@ Public License along with xlsx2sqlite.  If not, see
 # pylint: disable=bad-whitespace
 
 import setuptools
+from xlsx2sqlite.__version__ import __version__
 
 setuptools.setup(
     name="xlsx2sqlite",
-    version="0.1.2",
+    version=__version__,
     url="https://github.com/Xgalan/xlsx2sqlite",
 
     author="Erik Mascheri",
@@ -42,9 +43,8 @@ setuptools.setup(
         "tablib==3.0.0",
         "Click>=7,<8",
     ],
-
+    include_package_data=True,
     python_requires='>=3.6',
-
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',

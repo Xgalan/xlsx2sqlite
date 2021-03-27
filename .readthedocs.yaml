@@ -20,3 +20,4 @@ python:
       path: .
     - method: setuptools
       path: .
+    - requirements: docs/requirements.txt
