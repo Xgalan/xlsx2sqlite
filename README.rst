@@ -22,6 +22,10 @@ The INI file must contains this sections:
 - PATHS
 - WORKSHEETS
 
+Optional section for defining database constraints:
+
+- CONSTRAINTS
+
 Example of a configuration:
 
 .. code-block:: ini
@@ -43,17 +47,31 @@ Example of a configuration:
     SheetName1_columns = Col1,Col2,Col3
     SheetName2_columns = Col1,Col2,Col3
 
-Optional constraints section, add in the configuration file if necessary:
+
+Optional constraints section, add if necessary:
 
 .. code-block:: ini
 
     [CONSTRAINTS]
+    ; As of now, supported constraints are UNIQUE and "custom" PRIMARY KEY.
+    ; In example:
     ; worksheetname_UNIQUE equal to list of columns to be created
     ; with a UNIQUE constraint in the database.
-    SheetName1_UNIQUE = Col1
+    SheetName1_unique = Col1
+    SheetName1_primarykey = custom_id
+    ; Can define a primary key on an existing column, of course even
+    ; a non integer primary key, if supported by Sqlite.
+    SheetName2_primarykey = Col1
+
 
 Installation
 ------------
+
+Install the release from PyPI:
+
+..code-block:: bash
+
+    $ pip install xlsx2sqlite
 
 Installing from source, a virtualenv is recommended:
 

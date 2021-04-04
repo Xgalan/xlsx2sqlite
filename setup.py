@@ -17,23 +17,22 @@ Public License along with xlsx2sqlite.  If not, see
 import setuptools
 from xlsx2sqlite.__version__ import __version__
 
+
 setuptools.setup(
     name="xlsx2sqlite",
     version=__version__,
     url="https://github.com/Xgalan/xlsx2sqlite",
-
     author="Erik Mascheri",
     author_email="erik.mascheri@gmail.com",
-
     license='GPLv3',
     description="Generate a Sqlite3 database from a Office Open XML file.",
     long_description=open('README.rst').read(),
-
     packages=setuptools.find_packages(),
     install_requires=[
         "openpyxl>=3,<3.1",
         "tablib==3.0.0",
         "Click>=7,<8",
+        "colorama"
     ],
     include_package_data=True,
     python_requires='>=3.6',
@@ -47,7 +46,6 @@ setuptools.setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
-
     entry_points='''
         [console_scripts]
         xlsx2sqlite=xlsx2sqlite.cli:cli

@@ -37,14 +37,16 @@ def import_worksheets(workbook=None, worksheets=None):
               imported worksheets.
     """
     # load a xlsx file.
-    wb = load_workbook(filename=workbook, read_only=True)
+    wb = load_workbook(filename=workbook, read_only=True, keep_vba=False)
     if worksheets is not None:
-        worksheets = [wb[ws] for ws in worksheets]
+        imported_worksheets = [wb[ws] for ws in worksheets]
     else:
-        worksheets = [wb[ws] for ws in wb.sheetnames]
+        imported_worksheets = [wb[ws] for ws in wb.sheetnames]
     # import tables from imported worksheets
-    tables = {ws.title: [tuple([cell.value for cell in row])
-                         for row in ws.rows] for ws in worksheets}
+    # exclude row that are None ?
+    tables = {
+        ws.title: [tuple([cell.value for cell in row]) for row in ws.rows] for ws in imported_worksheets
+    }
     wb.close()
     return tables
 
@@ -82,8 +84,7 @@ class ConfigModel:
             if option in self.options:
                 return self.options[option]
             else:
-                return [v[option]
-                        for k,v in self.options.items() if option in v][0]
+                return [v[option] for k,v in self.options.items() if option in v][0]
         except KeyError as e:
             raise KeyError((str(e) + " not in the options list."))
 
@@ -97,12 +98,17 @@ class ConfigModel:
                   The lists must be declared in the INI configuration file.
         :rtype: dict
         """
+        def get_attrs(names, attribute):
+            return dict([
+                (name, list(self.get(str(name + attribute).lower()).split(
+                    self.COMMA_DELIM))) for name in names
+            ])
         names = list(self.get('names').split(self.COMMA_DELIM))
-        return {'worksheets': names,
-                'subset_cols': dict([(name, list(
-                    self.get(str(name + '_columns').lower()).split(
-                        self.COMMA_DELIM))) for name in names])
-                }
+        subset_cols = get_attrs(names, '_columns')
+        return {
+            'worksheets': names,
+            'subset_cols': subset_cols
+        }
 
     def import_config(self, ini):
         """Parse the configuration declared in the INI file.

@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 """Core module. Contains the main controller class.
-
 """
-from collections import OrderedDict
-
 import tablib
 
 from xlsx2sqlite.utils import import_worksheets
-from xlsx2sqlite.query import DatabaseWrapper
+from xlsx2sqlite.query import DatabaseWrapper, Definitions
+
 
 
 COMMA_DELIM = ','
@@ -15,7 +13,7 @@ COMMA_DELIM = ','
 
 class Tables:
     """Container class for tablib.Dataset instances."""
-    _tables = OrderedDict()
+    _tables = dict()
 
     def __iter__(self):
         return iter(self._tables)
@@ -66,98 +64,11 @@ class Tables:
         [self._tables[tablename].append(val) for val in values]
 
 
-class Definitions:
-    """Definitions generator for Sqlite3 tables."""
-    def __init__(self, headers=None, row=None,
-                 primary_key=None, unique_keys=None):
-        self.headers = headers
-        self.row = row
-        if primary_key is None:
-            self.primary_key = "'id'"
-        else:
-            self.primary_key = primary_key
-        self.unique_keys = unique_keys
-
-    def __str__(self):
-        fields = self.get_fields()
-        if self.unique_keys:
-            unique_keys = ["'" + s + "'" for s in self.unique_keys['unique']]
-            [fields.update({v: fields.get(v) + ' UNIQUE'}) for v in unique_keys]
-        return COMMA_DELIM.join(
-            [' '.join((k,v)) for k,v in fields.items()]
-            )
-
-    def get_primary_key(self):
-        """Get the primary key to use in the database.
-
-        :returns: The name of the primary key with the default Sqlite3
-                  datatype for primary key (`INTEGER PRIMARY KEY`). 
-        :rtype: tuple
-        """
-        return (self.primary_key, 'INTEGER PRIMARY KEY')
-
-    @staticmethod
-    def prepare_name(s):
-        """Return a suitable string for using in the database.
-
-        :param s: A string.
-        :returns: A capitalized form of the string with the leading
-                  and trailing characters removed.
-        """
-        s = s.strip()
-        return "'" + s.capitalize() + "'"
-
-    @staticmethod
-    def test_type(value):
-        """Detect the type of an object and return a Sqlite3 type affinity.
-
-        :param value: An instance to check for affinity.
-        :returns: The name of the Sqlite3 affinity type.
-        :rtype: str
-        """
-        #TODO: add datetime parsing
-        if isinstance(value, str):
-            return 'TEXT'
-        elif isinstance(value, int):
-            return 'INTEGER'
-        elif isinstance(value, float):
-            return 'REAL'
-        elif value is None:
-            return 'BLOB'
-        else:
-            return 'TEXT'
-
-    def get_columns_names(self):
-        """Prepare column names."""
-        return [self.prepare_name(col) for col in self.headers]
-
-    def get_columns_types(self):
-        """Detect Sqlite3 datatypes.
-
-        Detect Sqlite3 type affinity checking the first row of a table instance.
-        """
-        return [self.test_type(v) for v in self.row]
-
-    def get_fields(self):
-        """Get the list of fields for using as columns definitions.
-
-        :returns: A dictionary containing pairs of column names/column types
-                  to be used to create a definition for the database. 
-        :rtype: OrderedDict
-        """
-        # map types to column names
-        pk = self.get_primary_key()
-        d = OrderedDict(zip(self.get_columns_names(),
-                            self.get_columns_types()))
-        d[pk[0]] = pk[1]
-        d.move_to_end(pk[0], last=False)
-        return d
-
-
 class Controller:
     def __init__(self):
         self._collection = Tables()
         self._db = None
+        self._config = {}
         self._constraints = {}
 
     def __getattr__(self, name):
@@ -179,6 +90,10 @@ class Controller:
         """
         self._db = DatabaseWrapper(path=db_file)
 
+    def close_db(self):
+        """Close the connection to the database."""
+        self._db.close_db()
+
     def set_constraints(self, constraints):
         """Set a representation of the constraints declared in the INI file.
 
@@ -187,38 +102,141 @@ class Controller:
         """
         if isinstance(constraints, dict):
             d = {}
-            [self._constraints.update({k.lower(): {}})
-             for k in self._collection]
+            # create a key for every table in the collection
+            [self._constraints.update({k.lower(): {}}) for k in self._collection]
             for tablename in self._constraints.keys():
                 d[tablename] = {}
-                [d[tablename].update({k: constraints[k]})
-                 for k in constraints.keys() if tablename in k]                
-                unique_keys = [v for k,v in d[tablename].items()
-                               if 'unique' in k]
+                [
+                    d[tablename].update({k: constraints[k]}) for k in constraints.keys() if tablename in k
+                ]
+                unique_keys = [v for k,v in d[tablename].items() if 'unique' in k]
+                primary_key = [v for k,v in d[tablename].items() if 'primarykey' in k]
                 if unique_keys:
                     self._constraints[tablename].update(
-                        {'unique': [s.strip()
-                                    for s in unique_keys[0].split(COMMA_DELIM)]}
-                        )
+                        {'unique': [s.strip() for s in unique_keys[0].split(COMMA_DELIM)]}
+                    )
+                if primary_key:
+                    self._constraints[tablename].update(
+                        {'pk': [s.strip() for s in primary_key[0].split(COMMA_DELIM)]}
+                    )
         else:
             raise TypeError
+        
+    def set_config(self, workbook=None, worksheets=None, subset_cols=None, constraints=None):
+        self._config = dict(workbook=workbook, worksheets=worksheets, subset_cols=subset_cols)
+        self._config['constraints'] = constraints
 
-    def close_db(self):
-        """Close the connection to the database."""
-        self._db.close_db()
-
-    def initialize_db(self, update_only=False):
+    def initialize_db(self):
         """Creates the database tables and populates them with the data
         imported from the tables in the collection.
 
-        :key update_only: Insert or replace the values for all the tables
-                          in the database.
-
         The collection contains tablib.Dataset instances.
         """
-        if update_only is False:
-            [self.create_table(tablename=k) for k in self._collection]
-        [self.insert_or_replace(tablename=k) for k in self._collection]
+        messages = []
+        self.import_tables(
+            workbook=self._config['workbook'],
+            worksheets=self._config['worksheets'],
+            subset_cols=self._config['subset_cols']
+        )
+        self.set_constraints(self._config['constraints'])
+        messages += [self.create_table(tablename=k) for k in self._collection]
+        messages += [self.insert_into(tablename=k) for k in self._collection]
+        return messages
+
+    def insert_into(self, tablename=None):
+        """Insert data into the declared table.
+
+        :param tablename: Name of the table to insert into.
+        """
+        with self._db as db:
+            pk = None if not self._constraints else self._constraints[tablename.lower()]['pk']
+            table = self.get(tablename)
+            d = Definitions(
+                headers=table.headers,
+                row=table[0],
+                primary_key=pk
+            )
+            fields = d.get_fields()
+            db.insert_into(
+                tablename=tablename,
+                fields=d.get_labels(),
+                args=COMMA_DELIM.join(len(fields) * '?'),
+                data=[v for v in table]
+            )
+            return 'Data inserted into table: {}'.format(tablename)
+
+    def insert_or_replace(self, tablename=None):
+        """Perform a REPLACE operation on the database.
+
+        :param tablename: Name of the table on which to perform the REPLACE operation.
+        """
+        with self._db as db:
+            tinfo = db.table_info(tablename=tablename)
+            if tinfo == []:
+                return ['Table {} not found.'.format(tablename)]
+            db_pk = [dict(i) for i in tinfo if dict(i)['pk']==True][0]['name']
+            if db_pk not in self._config['subset_cols'][tablename]:
+                self._config['subset_cols'][tablename].insert(0, db_pk)
+            self.import_tables(
+                workbook=self._config['workbook'],
+                worksheets=self._config['worksheets'],
+                subset_cols=self._config['subset_cols']
+            )
+            # set constraints
+            self.set_constraints(self._config['constraints'])
+            pk = None if not self._constraints else self._constraints[tablename.lower()]['pk']
+            if pk is None:
+                return ['Must declare a primary key in the [CONSTRAINTS] section.']
+            table = self.get(tablename)
+            # retrieve first row from new data
+            first_row = dict(zip(table.headers, table[0]))
+            d = Definitions(
+                headers=table.headers,
+                row=table[0],
+                primary_key=pk
+            )
+            fields = d.get_fields()
+            # check if the primary key is in new data
+            if db_pk in first_row:
+                db.insert_or_replace(
+                    tablename=tablename,
+                    fields=d.get_labels(),
+                    args=COMMA_DELIM.join(len(fields) * '?'),
+                    data=[v for v in table]
+                )
+                return ['Updated table: {}'.format(tablename)]
+            else:
+                return [
+                    'Primary Key not found on {}, REPLACE operation aborted.'.format(tablename)
+                ]
+
+    def create_table(self, tablename=None):
+        """Create a new table in the database.
+
+        Retrieve the constraints if they exists, then generates the
+        definitions for the SQL query, finally creates the table
+        in the database.
+        The table name must exists in the tables collection.
+
+        :key tablename: Name of the table to be created.
+        """
+        # retrieve constraints for the given table
+        if any(self._constraints) is False:
+            constraints = self._constraints
+        else:
+            constraints = self._constraints[tablename.lower()]
+        unique = constraints['unique'] if 'unique' in constraints else None
+        pk = constraints['pk'] if 'pk' in constraints else None
+        # create the database table
+        with self._db as db:
+            table = self.get(tablename)
+            d = Definitions(
+                headers=table.headers,
+                row=table[0],
+                unique_keys=unique,
+                primary_key=pk
+            )
+            return db.create_table(tablename=tablename, definitions=d.prepare_sql())
 
     def drop_tables(self, tables_list):
         """Drop all the database tables with a name in the list.
@@ -288,44 +306,4 @@ class Controller:
         if q:
             return q.subset(cols=['type', 'name'])
         else:
-            return None        
-
-    def insert_or_replace(self, tablename=None):
-        with self._db as db:
-            # prepare definitions
-            d = Definitions(headers=self.get(tablename).headers,
-                            row=self.get(tablename)[0])
-
-            # insert or replace data into table
-            fields = d.get_fields()
-            data = [tuple([v[0]]) + v[1]
-                    for v in enumerate(self.get(tablename))]
-            db.insert_or_replace(tablename=tablename,
-                                 fields=COMMA_DELIM.join(fields.keys()),
-                                 args=COMMA_DELIM.join(len(fields) * '?'),
-                                 data=data)
-
-    def create_table(self, tablename=None):
-        """Create a new table in the database.
-
-        Retrieve the constraints if they exists, then generates the
-        definitions for the SQL query, finally creates the table
-        in the database.
-        The table name must exists in the tables collection.
-
-        :key tablename: Name of the table to be created.
-        """
-        # retrieve constraints for the given table
-        if any(self._constraints) is False:
-            print('No constraints specified.')
-            constraints = self._constraints
-        else:
-            constraints = self._constraints[tablename.lower()]
-        # create and populate the database table
-        with self._db as db:
-            # prepare definitions
-            d = Definitions(headers=self.get(tablename).headers,
-                            row=self.get(tablename)[0],
-                            unique_keys=constraints)
-            # create table in _db
-            db.create_table(tablename=tablename, definitions=str(d))
+            return None

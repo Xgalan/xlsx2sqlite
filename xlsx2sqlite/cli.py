@@ -4,6 +4,8 @@
 Parse the INI file passed as argument for retrieving the options, then
 executes the choosen command.
 """
+from pathlib import Path
+
 import click
 
 from xlsx2sqlite.utils import ConfigModel, export_worksheet
@@ -22,57 +24,56 @@ def cli(ctx, ini):
     """
     ctx.obj = ConfigModel()
     ctx.obj.import_config(ini)
-    click.echo('Parsed the config file.')
+    if ctx.obj._parser.has_section('CONSTRAINTS'):
+        constraints = dict(ctx.obj._parser.items('CONSTRAINTS'))
+    else:
+        constraints = None
+        click.secho('No constraints specified.', bg='yellow', fg='black', blink=True)
+    controller.set_config(
+        workbook=ctx.obj.get('xlsx_file'),
+        worksheets=ctx.obj.get_imports()['worksheets'],
+        subset_cols=ctx.obj.get_imports()['subset_cols'],
+        constraints=constraints
+    )
+    click.secho('Parsed the config file.', bg='green', fg='black')
 
 
 @click.command()
-@click.argument('table-name',
-                required=False,
-                type=click.STRING)
 @pass_config
-def create_or_update(config, table_name):
-    """Initialize the database or upsert data on a specified table.
+def initialize_db(config):
+    """Database creation and initialization.
 
-    Populates or updates the database with data imported from the worksheets.
-    If 'update-all' is passed as argument all tables will be updated.
+    Populates the database with data imported from the worksheets.
     """
-    controller.import_tables(workbook=config.get('xlsx_file'),
-                             worksheets=config.get_imports()['worksheets'],
-                             subset_cols=config.get_imports()['subset_cols'])
     controller.create_db(config.get('db_file'))
-    if table_name:
-        # Replace operation on sqlite database
-        if table_name in config.get_imports()['worksheets']:
-            controller.insert_or_replace(tablename=table_name)
-            click.echo('Updated table: ' + table_name)
-        elif table_name == 'update-all':
-            controller.initialize_db(update_only=True)
-            click.echo('Updated all tables.')
-    else:
-        if config._parser.has_section('CONSTRAINTS'):
-            controller.set_constraints(dict(config._parser.items('CONSTRAINTS')))
-        controller.initialize_db()
+    res = controller.initialize_db()
+    click.secho('Finished importing.', bg='green', fg='black')
+    [click.echo(msg) for msg in res]
     controller.close_db()
 
 
 @click.command()
+@click.argument(
+    'table-name',
+    required=True,
+    type=click.STRING
+)
 @pass_config
-def wizard(config):
-    """Create a new database using a wizard.
+def update(config, table_name):
+    """Upsert data on a specified table.
 
-    Populates the database with data imported from the worksheets.
+    #TODO: If 'update-all' is passed as argument all tables will be updated.
+    Use PRAGMA and sqlite schema to retrieve all the tables.
     """
-    from pathlib import PurePath
-
-    workbook=PurePath(config.get('xlsx_file'))
-    controller.create_empty_table(tablename=workbook.stem)
-    controller.import_tables(workbook=config.get('xlsx_file'),
-                             worksheets=None,
-                             subset_cols=config.get_imports()['subset_cols'])
     controller.create_db(config.get('db_file'))
-    if config._parser.has_section('CONSTRAINTS'):
-        controller.set_constraints(dict(config._parser.items('CONSTRAINTS')))
-    controller.initialize_db()
+    if table_name:
+        # Replace operation on sqlite database
+        if table_name in config.get_imports()['worksheets']:
+            res = controller.insert_or_replace(tablename=table_name)
+            click.secho('Finished importing.', bg='green', fg='black')
+    elif table_name == 'update-all':
+        click.secho('#TODO: update all tables', bg='green', fg='black')
+    [click.echo(msg) for msg in res]
     controller.close_db()
 
 
@@ -98,12 +99,9 @@ def create_views(config):
     Create views on the database loading `*.sql` from the path specified in
     the INI config file. A file must contain a valid `SELECT` query.
     """
-    from pathlib import Path
-
     controller.create_db(config.get('db_file'))
     p = Path(config.get('sql_views'))
-    [controller.create_view(viewname=f.stem, select=f.read_text())
-     for f in list(p.glob('**/*.sql'))]
+    [controller.create_view(viewname=f.stem, select=f.read_text()) for f in list(p.glob('**/*.sql'))]
     controller.close_db()
 
 
@@ -115,8 +113,6 @@ def drop_views(config):
 
     Drop all the views of the database.
     """
-    from pathlib import Path
-
     controller.create_db(config.get('db_file'))
     p = Path(config.get('sql_views'))
     [controller.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
@@ -142,7 +138,6 @@ def export_view(config, viewname, file_format, dest):
     - yaml
     - xlsx
     """
-
     export_in = {'csv': lambda _: _.export('csv'),
                  'json': lambda _: _.export('json'),
                  'yaml': lambda _: _.export('yaml')}
@@ -179,8 +174,8 @@ def list_def(config, table_type):
     click.echo(res) if res else click.echo('Not found any ' + table_type)
 
 
-cli.add_command(create_or_update)
-cli.add_command(wizard)
+cli.add_command(initialize_db)
+cli.add_command(update)
 cli.add_command(drop_tables)
 cli.add_command(drop_views)
 cli.add_command(create_views)
