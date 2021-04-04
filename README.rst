@@ -69,7 +69,7 @@ Installation
 
 Install the release from PyPI:
 
-..code-block:: bash
+.. code-block:: bash
 
     $ pip install xlsx2sqlite
 
