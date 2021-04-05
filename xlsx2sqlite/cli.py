@@ -87,7 +87,8 @@ def drop_tables(config):
     to the worksheets specified in the config file.
     """
     controller.create_db(config.get('db_file'))
-    controller.drop_tables(config.get_imports()['worksheets'])
+    res = controller.drop_tables(config.get_imports()['worksheets'])
+    [click.echo(msg) for msg in res]
     controller.close_db()
 
 
@@ -101,7 +102,8 @@ def create_views(config):
     """
     controller.create_db(config.get('db_file'))
     p = Path(config.get('sql_views'))
-    [controller.create_view(viewname=f.stem, select=f.read_text()) for f in list(p.glob('**/*.sql'))]
+    res = [controller.create_view(viewname=f.stem, select=f.read_text()) for f in list(p.glob('**/*.sql'))]
+    [click.echo(msg) for msg in res]
     controller.close_db()
 
 
@@ -115,7 +117,8 @@ def drop_views(config):
     """
     controller.create_db(config.get('db_file'))
     p = Path(config.get('sql_views'))
-    [controller.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
+    res = [controller.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
+    [click.echo(msg) for msg in res]
     controller.close_db()
 
 

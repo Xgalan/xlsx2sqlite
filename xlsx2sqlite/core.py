@@ -243,7 +243,7 @@ class Controller:
 
         :param tables_list: List of tables names to drop from the database.
         """
-        [self.drop_table(tablename=k) for k in tables_list]
+        return [self.drop_table(tablename=k) for k in tables_list]
 
     def drop_table(self, tablename=None):
         """Drop the database table with the corresponding name.
@@ -251,8 +251,7 @@ class Controller:
         :key tablename: Name of the table to drop from the database.
         """
         with self._db as db:
-            db.drop_entity(entity_name=tablename,
-                           entity_type='TABLE')
+            return db.drop_entity(entity_name=tablename, entity_type='TABLE')
 
     def create_view(self, viewname=None, select=None):
         """Create a database view.
@@ -261,7 +260,7 @@ class Controller:
         :key select: `SELECT` query statement.
         """
         with self._db as db:
-            db.create_view(viewname=viewname, select=select)
+            return db.create_view(viewname=viewname, select=select)
 
     def drop_view(self, viewname=None):
         """Drop the database view with the corresponding name.
@@ -269,8 +268,7 @@ class Controller:
         :key viewname: Name of the view to drop from the database.
         """
         with self._db as db:
-            db.drop_entity(entity_name=viewname,
-                           entity_type='VIEW')
+            return db.drop_entity(entity_name=viewname, entity_type='VIEW')
 
     def select_all(self, table_name=None, where_clause=None):
         """Perform a `SELECT *` SQL query on the database.

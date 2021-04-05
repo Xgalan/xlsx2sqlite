@@ -261,7 +261,7 @@ class DatabaseWrapper:
         parameters = {'name': viewname, 'select':  select}
         messages = {'error': 'Error when creating view: ',
                     'success': 'Created view: ' + parameters['name']}
-        self._execute(self.SQL_QUERY['create_view'], parameters, messages)
+        return self._execute(self.SQL_QUERY['create_view'], parameters, messages)
 
     def drop_entity(self, entity_name=None, entity_type=None):
         """Drop the specified entity from the database.
@@ -285,7 +285,7 @@ class DatabaseWrapper:
         messages = {'error': 'Error when deleting ' + entity_type + ' ' + entity_name,
                     'success': 'Deleted ' + entity_type + ' ' + entity_name}
         if entity_type in ['TABLE', 'VIEW']:
-            self._execute(self.SQL_QUERY['drop_entity'], parameters, messages)
+            return self._execute(self.SQL_QUERY['drop_entity'], parameters, messages)
 
     def _executemany(self, query, parameters, data):
         try:

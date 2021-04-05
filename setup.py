@@ -27,6 +27,7 @@ setuptools.setup(
     license='GPLv3',
     description="Generate a Sqlite3 database from a Office Open XML file.",
     long_description=open('README.rst').read(),
+    long_description_content_type="text/x-rst",
     packages=setuptools.find_packages(),
     install_requires=[
         "openpyxl>=3,<3.1",
