@@ -119,6 +119,8 @@ class Controller:
                     self._constraints[tablename].update(
                         {'pk': [s.strip() for s in primary_key[0].split(COMMA_DELIM)]}
                     )
+        elif constraints is None:
+            pass
         else:
             raise TypeError
         

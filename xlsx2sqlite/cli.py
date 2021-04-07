@@ -28,7 +28,7 @@ def cli(ctx, ini):
         constraints = dict(ctx.obj._parser.items('CONSTRAINTS'))
     else:
         constraints = None
-        click.secho('No constraints specified.', bg='yellow', fg='black', blink=True)
+        click.secho('No constraints specified.', bg='yellow', fg='black')
     controller.set_config(
         workbook=ctx.obj.get('xlsx_file'),
         worksheets=ctx.obj.get_imports()['worksheets'],
