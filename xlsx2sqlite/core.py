@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Core module. Contains the main controller class.
-"""
+"""Core module. Contains the main controller class."""
 import tablib
 
 from xlsx2sqlite.utils import import_worksheets
@@ -31,7 +30,8 @@ class Tables:
     def __getitem__(self, key):
         return self._tables[key]
 
-    def import_tables(self, workbook=None, worksheets=None, subset_cols=None):
+    def import_tables(
+        self, workbook=None, worksheets=None, subset_cols=None, headers=None):
         """Import the specified worksheets into the tables collection.
 
         :key workbook: Path of the xlsx file to open for import.
@@ -40,9 +40,17 @@ class Tables:
         """
         tables = import_worksheets(workbook=workbook, worksheets=worksheets)
         for tbl_name,values in tables.items():
-            headers = values.pop(0)
+            if headers:
+                tablename = tbl_name.lower() + '_header'
+                if tablename in headers:
+                    row_nr = int(headers[tablename]) - 1
+                    if row_nr > 0:
+                        values = values[row_nr:]
+                    else:
+                        print('Header row must be 1 or greater.')
+            header = values.pop(0)
             self._tables[tbl_name] = tablib.Dataset(
-                *values, headers=headers).subset(cols=subset_cols[tbl_name])
+                *values, headers=header).subset(cols=subset_cols[tbl_name])
 
     def create_empty_table(self, tablename=None, headers=None):
         """Creates a tablib.Dataset instance in the collection.
@@ -123,9 +131,12 @@ class Controller:
             pass
         else:
             raise TypeError
-        
-    def set_config(self, workbook=None, worksheets=None, subset_cols=None, constraints=None):
-        self._config = dict(workbook=workbook, worksheets=worksheets, subset_cols=subset_cols)
+
+    def set_config(self, workbook=None, worksheets=None, subset_cols=None,
+        headers=None, constraints=None):
+        self._config = dict(
+            workbook=workbook, worksheets=worksheets, subset_cols=subset_cols)
+        self._config['headers'] = headers
         self._config['constraints'] = constraints
 
     def initialize_db(self):
@@ -138,7 +149,8 @@ class Controller:
         self.import_tables(
             workbook=self._config['workbook'],
             worksheets=self._config['worksheets'],
-            subset_cols=self._config['subset_cols']
+            subset_cols=self._config['subset_cols'],
+            headers=self._config['headers']
         )
         self.set_constraints(self._config['constraints'])
         messages += [self.create_table(tablename=k) for k in self._collection]
@@ -182,7 +194,8 @@ class Controller:
             self.import_tables(
                 workbook=self._config['workbook'],
                 worksheets=self._config['worksheets'],
-                subset_cols=self._config['subset_cols']
+                subset_cols=self._config['subset_cols'],
+                headers=self._config['headers']
             )
             # set constraints
             self.set_constraints(self._config['constraints'])

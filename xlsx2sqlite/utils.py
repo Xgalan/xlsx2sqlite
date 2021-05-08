@@ -99,10 +99,13 @@ class ConfigModel:
         :rtype: dict
         """
         def get_attrs(names, attribute):
-            return dict([
-                (name, list(self.get(str(name + attribute).lower()).split(
-                    self.COMMA_DELIM))) for name in names
-            ])
+            try:
+                return dict([
+                    (name, list(self.get(str(name + attribute).lower()).split(
+                        self.COMMA_DELIM))) for name in names
+                ])
+            except IndexError:
+                print('Must set an attribute with: {0}'.format(attribute))
         names = list(self.get('names').split(self.COMMA_DELIM))
         subset_cols = get_attrs(names, '_columns')
         return {

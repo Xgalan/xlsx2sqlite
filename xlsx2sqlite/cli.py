@@ -29,10 +29,16 @@ def cli(ctx, ini):
     else:
         constraints = None
         click.secho('No constraints specified.', bg='yellow', fg='black')
+    if ctx.obj._parser.has_section('HEADERS'):
+        headers = dict(ctx.obj._parser.items('HEADERS'))
+    else:
+        headers = None
+        click.secho('No custom headers specified.', bg='yellow', fg='black')
     controller.set_config(
         workbook=ctx.obj.get('xlsx_file'),
         worksheets=ctx.obj.get_imports()['worksheets'],
         subset_cols=ctx.obj.get_imports()['subset_cols'],
+        headers=headers,
         constraints=constraints
     )
     click.secho('Parsed the config file.', bg='green', fg='black')
