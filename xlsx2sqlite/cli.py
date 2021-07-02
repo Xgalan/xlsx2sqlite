@@ -146,6 +146,7 @@ def export_view(config, viewname, file_format, dest):
     - json
     - yaml
     - xlsx
+    - dbf
     """
     export_in = {'csv': lambda _: _.export('csv'),
                  'json': lambda _: _.export('json'),
@@ -162,6 +163,10 @@ def export_view(config, viewname, file_format, dest):
         click.echo('Created file: ' + dest.name)
     elif file_format == 'xlsx':
         export_worksheet(filename=dest, ws_name=viewname, rows=res)
+        click.echo('Created file: ' + dest.name)
+    elif file_format == 'dbf':
+        dest.write(bytes(res.export('dbf')))
+        dest.close()
         click.echo('Created file: ' + dest.name)
     else:
         click.echo(res)
