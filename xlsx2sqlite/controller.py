@@ -1,80 +1,17 @@
 # -*- coding: utf-8 -*-
 """Core module. Contains the main controller class."""
-import tablib
-
-from xlsx2sqlite.utils import import_worksheets
-from xlsx2sqlite.query import DatabaseWrapper, Definitions
+from xlsx2sqlite.model_factory import Definitions
+from xlsx2sqlite.dataset import Dataset
+from xlsx2sqlite.db_wrapper import DatabaseWrapper
 
 
 
 COMMA_DELIM = ','
 
 
-class Tables:
-    """Container class for tablib.Dataset instances."""
-    _tables = dict()
-
-    def __iter__(self):
-        return iter(self._tables)
-
-    def get(self, table):
-        """Get a table by name.
-
-        :param table: Name of the table.
-        """
-        return self._tables.get(table, None)
-
-    def __contains__(self, key):
-        return self._tables[key]
-
-    def __getitem__(self, key):
-        return self._tables[key]
-
-    def import_tables(
-        self, workbook=None, worksheets=None, subset_cols=None, headers=None):
-        """Import the specified worksheets into the tables collection.
-
-        :key workbook: Path of the xlsx file to open for import.
-        :key worksheets: List of the worksheets to be imported.
-        :key subset: List of columns in the worksheet to consider for import.
-        """
-        tables = import_worksheets(workbook=workbook, worksheets=worksheets)
-        for tbl_name,values in tables.items():
-            if headers:
-                tablename = tbl_name.lower() + '_header'
-                if tablename in headers:
-                    row_nr = int(headers[tablename]) - 1
-                    if row_nr > 0:
-                        values = values[row_nr:]
-                    else:
-                        print('Header row must be 1 or greater.')
-            header = values.pop(0)
-            self._tables[tbl_name] = tablib.Dataset(
-                *values, headers=header).subset(cols=subset_cols[tbl_name])
-
-    def create_empty_table(self, tablename=None, headers=None):
-        """Creates a tablib.Dataset instance in the collection.
-
-        :key tablename: Name of the table to be created.
-        :key headers: List of labels for the table header.
-        :returns: An empty table.
-        :rtype: tablib.Dataset
-        """
-        self._tables[tablename] = tablib.Dataset(headers=headers)
-        return self._tables[tablename]
-
-    def values_to_table(self, tablename=None, values=None):
-        """Append values to a tablib.Dataset table in the collection.
-
-        :key tablename: Name of the table.
-        :key values: List of values to append.
-        """
-        [self._tables[tablename].append(val) for val in values]
-
-
 class Controller:
     def __init__(self):
-        self._collection = Tables()
+        self._collection = Dataset()
         self._db = None
         self._config = {}
         self._constraints = {}
@@ -246,12 +183,13 @@ class Controller:
         with self._db as db:
             table = self.get(tablename)
             d = Definitions(
+                name=tablename,
                 headers=table.headers,
                 row=table[0],
                 unique_keys=unique,
                 primary_key=pk
             )
-            return db.create_table(tablename=tablename, definitions=d.prepare_sql())
+            return db.create_table(tablename=d.tablename, definitions=d.prepare_sql())
 
     def drop_tables(self, tables_list):
         """Drop all the database tables with a name in the list.
@@ -299,8 +237,10 @@ class Controller:
                 parameters['where'] = where_clause
             q = db.select(**parameters)
             if q:
-                return tablib.Dataset(*[tuple(row) for row in q],
-                                      headers=q[0].keys())
+                return self._dataset(
+                    *[tuple(row) for row in q],
+                    headers=q[0].keys()
+                )
             else:
                 return None
 

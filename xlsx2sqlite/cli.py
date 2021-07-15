@@ -9,7 +9,7 @@ from pathlib import Path
 import click
 
 from xlsx2sqlite.utils import ConfigModel, export_worksheet
-from xlsx2sqlite.core import Controller
+from xlsx2sqlite.controller import Controller
 
 
 pass_config = click.make_pass_decorator(ConfigModel)
