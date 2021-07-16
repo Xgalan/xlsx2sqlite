@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Core module. Contains the main controller class."""
-from xlsx2sqlite.model_factory import Definitions
+from xlsx2sqlite.definitions_factory import Definitions
 from xlsx2sqlite.dataset import Dataset
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
 
