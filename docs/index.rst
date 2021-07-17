@@ -70,8 +70,8 @@ API Reference
    :caption: Contents:
 
    cli.rst
-   core.rst
-   query.rst
+   controller.rst
+   db_wrapper.rst
    utils.rst
 
 
