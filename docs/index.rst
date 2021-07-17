@@ -72,6 +72,7 @@ API Reference
    cli.rst
    controller.rst
    db_wrapper.rst
+   field_factory.rst
    utils.rst
 
 
