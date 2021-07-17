@@ -8,6 +8,22 @@ SPACE_DELIM = ' '
 
 def create_field(type_of: str, field_name: str, field_type: str) -> object:
     """Field factory
+
+    :param type_of: The type to assign to the database table column, choose between:
+
+                    - Field: generic field without a column level constraint
+                    - Unique: field with a UNIQUE clause
+                    - PrimaryKey: field with PRIMARY KEY column level constraint
+                    - NotNullField: set a NOT NULL column constraint on the database column
+
+    :type type_of: str
+    :param field_name: Label for the column of the database table.
+    :type field_name: str
+    :param field_type: Column type as a string defined in sqlite column types.
+    :type field_type: str
+    :returns: An instance of a Field object with a to_sql() method that returns an 
+              appropriate SQL string.
+    :rtype: object
     """
     fields = {
         "Field": Field,
