@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+__all__ = ["create_table_constraint"]
 
 
 COMMA_DELIM = ','
 SPACE_DELIM = ' '
 
 
-def get_table_constraint(clause: str, columns: list) -> object:
+def create_table_constraint(clause: str, columns: list) -> object:
     """Table-level constraint class factory
     """
     definition = {

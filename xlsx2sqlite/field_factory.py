@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+__all__ = ["create_field"]
 
 
 COMMA_DELIM = ','
 SPACE_DELIM = ' '
 
 
-def get_field(type_of: str, field_name: str, field_type: str) -> object:
+def create_field(type_of: str, field_name: str, field_type: str) -> object:
     """Field factory
     """
     fields = {

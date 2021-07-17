@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
-from xlsx2sqlite.field_factory import get_field
-from xlsx2sqlite.constraint_factory import get_table_constraint
+import xlsx2sqlite.field_factory as field
+import xlsx2sqlite.constraint_factory as constraint
 
 
 
@@ -35,7 +35,7 @@ class Definitions:
                 primary key column, the system chooses an integer value to use as the rowid 
                 automatically.
                 """
-                self.primary_key = get_field('PrimaryKey', 'id', 'INTEGER')
+                self.primary_key = field.create_field('PrimaryKey', 'id', 'INTEGER')
             elif isinstance(primary_key, list):
                 if any(set(primary_key) & set(headers)):
                     # workaround primary key field bug in sqlite, using NOT NULL column constraint
@@ -43,17 +43,17 @@ class Definitions:
                         if key in self._fields:
                             self._fields[key]['cls'] = 'NotNullField'
                         else:
-                            self.primary_key = get_field('NotNullField', key, 'INTEGER')
+                            self.primary_key = field.create_field('NotNullField', key, 'INTEGER')
                     # support for composite primary key
                     self.table_constraints.append(
-                        get_table_constraint(clause="PrimaryKey", columns=primary_key)
+                        constraint.create_table_constraint(clause="PrimaryKey", columns=primary_key)
                     )
                 else:
                     # set a custom name for the row_id alias
-                    self.primary_key = get_field('PrimaryKey', primary_key[0], 'INTEGER')
+                    self.primary_key = field.create_field('PrimaryKey', primary_key[0], 'INTEGER')
             if unique_keys and isinstance(unique_keys, list):
                 self.table_constraints.append(
-                    get_table_constraint(clause="Unique", columns=unique_keys)
+                    constraint.create_table_constraint(clause="Unique", columns=unique_keys)
                 )
         except TypeError:
             print('Must declare headers and row.')
@@ -101,7 +101,7 @@ class Definitions:
         :returns: A list of Field instances describing the columns of the database.
         :rtype: list
         """
-        fields = [get_field(v['cls'], k, v['type']) for k,v in self._fields.items()]
+        fields = [field.create_field(v['cls'], k, v['type']) for k,v in self._fields.items()]
         return fields
 
     def get_labels(self):
