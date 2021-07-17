@@ -8,7 +8,9 @@ from xlsx2sqlite.utils import import_worksheets
 
 
 class Dataset:
-    """Container class for tablib.Dataset instances."""
+    """Container class for tablib.Dataset instances.
+    """
+
     _tables = dict()
     _dataset = tablib.Dataset
 

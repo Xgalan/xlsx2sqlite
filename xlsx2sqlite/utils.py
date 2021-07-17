@@ -6,7 +6,6 @@ containing table data, it uses the `openpyxl` package.
 
 The :func:`import_worksheets` function is useful for importing specified
 worksheets from a xlsx file, it uses the `openpyxl` package.
-
 """
 import configparser
 
@@ -63,7 +62,9 @@ def import_worksheets(workbook=None, worksheets=None):
 
 class ConfigModel:
     """Representation for accessing the options of the parsed
-    configuration file."""
+    configuration file.
+    """
+
     COMMA_DELIM = ','
     
     def __init__(self, options=None):

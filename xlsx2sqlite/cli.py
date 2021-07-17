@@ -178,7 +178,8 @@ def export_view(config, viewname, file_format, dest):
                 type=click.Choice(['table', 'view', 'all']))
 @pass_config
 def list_def(config, table_type):
-    """List all tables or list all views in the database."""
+    """List all tables or list all views in the database.
+    """
     controller.create_db(config.get('db_file'))
     if table_type == 'all':
         res = controller.ls_entities()

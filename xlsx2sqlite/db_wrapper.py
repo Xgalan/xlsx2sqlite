@@ -12,6 +12,7 @@ class DatabaseWrapper:
                specified the class will instantiate a sqlite3
                in memory database.
     """
+
     SQL_QUERY = {
         'create_table': 'CREATE TABLE IF NOT EXISTS {name} ({definitions});',
         'create_view': 'CREATE VIEW IF NOT EXISTS {name} AS {select};',

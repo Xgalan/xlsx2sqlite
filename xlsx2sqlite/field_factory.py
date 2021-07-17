@@ -25,6 +25,7 @@ def create_field(type_of: str, field_name: str, field_type: str) -> object:
               appropriate SQL string.
     :rtype: object
     """
+
     fields = {
         "Field": Field,
         "Unique": UniqueField,
@@ -37,6 +38,7 @@ def create_field(type_of: str, field_name: str, field_type: str) -> object:
 class Field:
     """Represents a database field.
     """
+
     def __init__(self, field_name=None, field_type=None):
         self.field_name = field_name
         self.field_type = field_type
@@ -67,6 +69,7 @@ class AddDefinitionMixin:
 
     Main class must contain a label method that returns a string.
     """
+
     def __repr__(self):
         return f'<Field {self.field_name}, type={self.field_type} definition={self.definition}>'
 
@@ -83,6 +86,7 @@ class AddDefinitionMixin:
 class PrimaryKey(AddDefinitionMixin, Field):
     """Represents the primary key for a database table.
     """
+
     def __init__(self, field_name, field_type):
         super().__init__(field_name, field_type)
         self.definition = "NOT NULL PRIMARY KEY"
@@ -91,6 +95,7 @@ class PrimaryKey(AddDefinitionMixin, Field):
 class UniqueField(AddDefinitionMixin, Field):
     """Represents a field with a UNIQUE clause.
     """
+
     def __init__(self, field_name, field_type):
         super().__init__(field_name, field_type)
         self.definition = "UNIQUE"
@@ -99,6 +104,7 @@ class UniqueField(AddDefinitionMixin, Field):
 class NotNullField(AddDefinitionMixin, Field):
     """A field with the NOT NULL clause.
     """
+
     def __init__(self, field_name, field_type):
         super().__init__(field_name, field_type)
         self.definition = "NOT NULL"

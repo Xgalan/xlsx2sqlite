@@ -12,6 +12,7 @@ COMMA_DELIM = ','
 class Definitions:
     """Definitions generator for Sqlite3 tables.
     """
+
     def __init__(self, name=None, headers=None, row=None, primary_key=None, unique_keys=None):
         try:
             if headers is None or row is None:

@@ -8,6 +8,9 @@ SPACE_DELIM = ' '
 
 def create_table_constraint(clause: str, columns: list) -> object:
     """Table-level constraint class factory
+
+    :returns: An instance of TableConstraint, a class that represents a SQL table level constraint
+    :rtype: object
     """
     definition = {
         "Unique": "UNIQUE",
@@ -19,6 +22,7 @@ def create_table_constraint(clause: str, columns: list) -> object:
 class TableConstraint:
     """Class for defining a table-level constraint on the table, permit to support a composite primary key.
     """
+
     def __init__(self, keyword, columns):
         self._keyword = keyword
         self._columns = columns
