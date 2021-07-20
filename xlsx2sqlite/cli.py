@@ -8,11 +8,12 @@ from pathlib import Path
 
 import click
 
-from xlsx2sqlite.utils import ConfigModel, export_worksheet
+from xlsx2sqlite.import_export import export_worksheet
+from xlsx2sqlite.config import Xlsx2sqliteConfig
 from xlsx2sqlite.controller import Controller
 
 
-pass_config = click.make_pass_decorator(ConfigModel)
+pass_config = click.make_pass_decorator(Xlsx2sqliteConfig)
 
 
 @click.group()
@@ -22,24 +23,21 @@ def cli(ctx, ini):
     """Generate a Sqlite3 database parsing options from a .INI
     configuration file.
     """
-    ctx.obj = ConfigModel()
-    ctx.obj.import_config(ini)
-    if ctx.obj._parser.has_section('CONSTRAINTS'):
-        constraints = dict(ctx.obj._parser.items('CONSTRAINTS'))
-    else:
-        constraints = None
-        click.secho('No constraints specified.', bg='yellow', fg='black')
-    if ctx.obj._parser.has_section('HEADERS'):
-        headers = dict(ctx.obj._parser.items('HEADERS'))
-    else:
-        headers = None
-        click.secho('No custom headers specified.', bg='yellow', fg='black')
+    try:
+        ctx.obj = Xlsx2sqliteConfig(ini)
+    except KeyError as err:        
+        click.secho(str(err), bg='red', fg='black')
+        raise click.Abort
+    # check for warning messages
+    [click.secho(msg, bg='yellow', fg='black') for msg in ctx.obj.log]
+    # this method is a problem because controller must know the implementation details of the config object,
+    # so the objects are not decoupled
     controller.set_config(
         workbook=ctx.obj.get('xlsx_file'),
         worksheets=ctx.obj.get_imports()['worksheets'],
         subset_cols=ctx.obj.get_imports()['subset_cols'],
-        headers=headers,
-        constraints=constraints
+        headers=ctx.obj.get_options()['HEADERS'],
+        constraints=ctx.obj.get_options()['CONSTRAINTS']
     )
     click.secho('Parsed the config file.', bg='green', fg='black')
 
@@ -60,16 +58,11 @@ def initialize_db(config):
 
 @click.command()
 @click.argument(
-    'table-name',
-    required=True,
-    type=click.STRING
+    'table-name', type=click.STRING
 )
 @pass_config
 def update(config, table_name):
     """Upsert data on a specified table.
-
-    #TODO: If 'update-all' is passed as argument all tables will be updated.
-    Use PRAGMA and sqlite schema to retrieve all the tables.
     """
     controller.create_db(config.get('db_file'))
     if table_name:
@@ -77,8 +70,6 @@ def update(config, table_name):
         if table_name in config.get_imports()['worksheets']:
             res = controller.insert_or_replace(tablename=table_name)
             click.secho('Finished importing.', bg='green', fg='black')
-    elif table_name == 'update-all':
-        click.secho('#TODO: update all tables', bg='green', fg='black')
     [click.echo(msg) for msg in res]
     controller.close_db()
 

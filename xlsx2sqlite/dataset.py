@@ -3,7 +3,7 @@
 """
 import tablib
 
-from xlsx2sqlite.utils import import_worksheets
+from xlsx2sqlite.import_export import import_worksheets
 
 
 
@@ -30,8 +30,7 @@ class Dataset:
     def __getitem__(self, key):
         return self._tables[key]
 
-    def import_tables(
-        self, workbook=None, worksheets=None, subset_cols=None, headers=None):
+    def import_tables(self, workbook=None, worksheets=None, subset_cols=None, headers=None):
         """Import the specified worksheets into the tables collection.
 
         :key workbook: Path of the xlsx file to open for import.

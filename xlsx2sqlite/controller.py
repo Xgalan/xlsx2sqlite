@@ -74,9 +74,12 @@ class Controller:
     def set_config(self, workbook=None, worksheets=None, subset_cols=None,
         headers=None, constraints=None):
         self._config = dict(
-            workbook=workbook, worksheets=worksheets, subset_cols=subset_cols)
-        self._config['headers'] = headers
-        self._config['constraints'] = constraints
+            workbook=workbook, 
+            worksheets=worksheets, 
+            subset_cols=subset_cols,
+            headers=headers,
+            constraints=constraints
+        )
 
     def initialize_db(self):
         """Creates the database tables and populates them with the data

@@ -52,7 +52,9 @@ class Field:
         :returns: A form of the string with the leading and trailing characters removed.
         :rtype: str
         """
-        return "'" + self.field_name.strip() + "'"
+        backtick = "`"
+        label = f'{backtick}{self.field_name.strip()}{backtick}'
+        return label
     
     def to_sql(self):
         """Return a suitable string for using in the database.
