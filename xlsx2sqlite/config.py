@@ -3,8 +3,6 @@
 """
 import configparser
 
-from click.termui import secho
-
 
 
 class IniParser:
@@ -76,27 +74,21 @@ class Xlsx2sqliteConfig(IniParser):
     
     MANDATORY_SECTIONS = [
         'PATHS',
-        'WORKSHEETS'
     ]
     
     OPTIONAL_SECTIONS = {
+        'WORKSHEETS': None,
         'CONSTRAINTS': None,
         'HEADERS': None
     }
 
     MODEL_KEYWORDS = [
-        'table_name',
+        'worksheet',
         'columns',
         'primary_key',
         'unique',
         'not_null'
     ]
-
-    MODEL_TEMPLATE = {
-        'worksheet': None,
-        'header': None,
-        'table_def': MODEL_KEYWORDS
-    }
 
     def __init__(self, ini):
         super().__init__()
@@ -111,23 +103,61 @@ class Xlsx2sqliteConfig(IniParser):
             if self.has_section(section):
                 self.OPTIONAL_SECTIONS[section] = dict(self._parser.items(section))
             else:
-                self.log.append(f'No {section} section specified in the .ini file')
+                self.log.append(f'No [{section}] section specified in the .ini file')
 
-    def get_model(self, tablename):
+    def get_tables_names(self):
+        """Find the names of the tables to import.
+
+        :returns: A list of the worksheets to import
+        :rtype: set
         """
+        return set(self.sections()) - self.get_reserved_words()
+    
+    def get_columns_to_import(self):
+        """Retrieve the subset of columns to import as declared in the .ini file.
+
+        :returns: A dictionary with a list of columns names as a representation
+                  for the columns to be retrieved from a worksheet accessing
+                  the `subset_cols` key of the dictionary.
+                  The lists must be declared in the INI configuration file.
+        :rtype: dict
         """
-        worksheets_names = set(self.get_imports()['worksheets'])
-        if tablename in worksheets_names:
-            model = {
-                tablename: {
-                    keyword: str(self._parser.get(
-                        tablename, keyword, fallback=None
-                    )).split(
+        return {
+            t: self.get_models()[t]['columns'] for t in self.get_tables_names()
+        }
+
+    def get_reserved_words(self):
+        return set([*self.MANDATORY_SECTIONS, *self.OPTIONAL_SECTIONS])
+
+    def get_models(self):
+        """Returns a representation of the models as configured in the .ini file. 
+
+        :returns: A representation of the models parsed from the .ini file.
+        :rtype: dict
+        """
+        
+        def get_table_config(table, attr):
+            try:
+                d = dict({
+                    attr: self._parser.get(
+                        table, attr, fallback=None
+                    )
+                })
+                if isinstance(d[attr], str):
+                    return d[attr].split(
                         self.COMMA_DELIM
-                    ) for keyword in self.MODEL_KEYWORDS
-                }
-            }
-            return model
+                    )
+                else:
+                    return None
+            except AttributeError as err:
+                raise err
+
+        models = { name: {} for name in self.get_tables_names() }
+        for k in models.keys():
+            models[k].update({
+                keyword: get_table_config(k, keyword) for keyword in self.MODEL_KEYWORDS
+            })
+        return models
 
     def get_options(self):
         """Retrieve values of the optional sections if they exists
@@ -138,15 +168,17 @@ class Xlsx2sqliteConfig(IniParser):
         return self.OPTIONAL_SECTIONS
 
     def get_imports(self):
-        """Retrieve the worksheets names and a subset of columns as declared.
+        """Retrieve the subset of columns to import as declared in the .ini file.
 
-        :returns: A dictionary with a list of worksheets names accessing the
-                  `worksheets` key; a list of columns names as a representation
+        :returns: A dictionary with a list of columns names as a representation
                   for the columns to be retrieved from a worksheet accessing
                   the `subset_cols` key of the dictionary.
                   The lists must be declared in the INI configuration file.
         :rtype: dict
+
+        DEPRECATED: do not use this anymore, backward-compatibility with old config style
         """
+
         def get_attrs(names, attribute):
             try:
                 return dict([
@@ -155,9 +187,9 @@ class Xlsx2sqliteConfig(IniParser):
                 ])
             except IndexError:
                 print('Must set an attribute with: {0}'.format(attribute))
-        names = list(self.get('names').split(self.COMMA_DELIM))
-        subset_cols = get_attrs(names, '_columns')
+
+        names = self.get_tables_names()
         return {
             'worksheets': names,
-            'subset_cols': subset_cols
+            'subset_cols': get_attrs(names, '_columns')
         }

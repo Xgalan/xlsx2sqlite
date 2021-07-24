@@ -76,3 +76,12 @@ def test_get_model(config):
     assert m['SalesOrders']['table_name'] == ['Sales Orders']
     cols = m['SalesOrders']['columns']
     assert type(cols) == list
+
+
+def test_section_complex_name(config):
+    sections = config.sections()
+    pass
+
+
+def test_custom_header_row(config):
+    pass

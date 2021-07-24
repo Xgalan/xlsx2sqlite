@@ -7,15 +7,25 @@ from xlsx2sqlite.db_wrapper import DatabaseWrapper
 
 
 
-COMMA_DELIM = ','
-
-
 class Controller:
-    def __init__(self):
+
+    COMMA_DELIM = ','
+
+    def __init__(self, ini_config=None):
         self._collection = Dataset()
         self._db = None
         self._config = {}
         self._constraints = {}
+        if ini_config is not None:
+            self._ini = ini_config
+            self._config = dict(
+                workbook=self._ini.get('xlsx_file'), 
+                worksheets=self._ini.get_tables_names(), 
+                subset_cols=self._ini.get_columns_to_import(),
+                headers=self._ini.get_options()['HEADERS'],
+                constraints=self._ini.get_options()['CONSTRAINTS']
+            )
+            self.create_db(self._ini.get('db_file'))
 
     def __getattr__(self, name):
         attr = getattr(self._collection, name)
@@ -60,26 +70,16 @@ class Controller:
                 primary_key = [v for k,v in d[tablename].items() if 'primarykey' in k]
                 if unique_keys:
                     self._constraints[tablename].update(
-                        {'unique': [s.strip() for s in unique_keys[0].split(COMMA_DELIM)]}
+                        {'unique': [s.strip() for s in unique_keys[0].split(self.COMMA_DELIM)]}
                     )
                 if primary_key:
                     self._constraints[tablename].update(
-                        {'pk': [s.strip() for s in primary_key[0].split(COMMA_DELIM)]}
+                        {'pk': [s.strip() for s in primary_key[0].split(self.COMMA_DELIM)]}
                     )
         elif constraints is None:
             pass
         else:
             raise TypeError
-
-    def set_config(self, workbook=None, worksheets=None, subset_cols=None,
-        headers=None, constraints=None):
-        self._config = dict(
-            workbook=workbook, 
-            worksheets=worksheets, 
-            subset_cols=subset_cols,
-            headers=headers,
-            constraints=constraints
-        )
 
     def initialize_db(self):
         """Creates the database tables and populates them with the data
@@ -88,6 +88,18 @@ class Controller:
         The collection contains tablib.Dataset instances.
         """
         messages = []
+        """
+        self._config example:
+
+        {'workbook': 'C:\\Users\\erikm\\Documents\\Projects\\xlsx2sqlite_api_test/test2.xlsx',
+         'worksheets': {'TestSheet', 'TestNonIntegerPrimaryKey'},
+         'subset_cols': {'TestSheet': [
+             'Test_id', 'col1', 'col2', 'col3', 'col4', 'col5'
+             ], 'TestNonIntegerPrimaryKey': [
+             'col1', 'col2', 'col3', 'col4']}, 'headers': {'testsheet_header': '3'},
+            'constraints': {'testsheet_primarykey': 'Test_id,col1', 'testsheet_unique': 'col1',
+                            'testnonintegerprimarykey_primarykey': 'col1'}}
+        """
         self.import_tables(
             workbook=self._config['workbook'],
             worksheets=self._config['worksheets'],
@@ -116,7 +128,7 @@ class Controller:
             db.insert_into(
                 tablename=tablename,
                 fields=d.get_labels(),
-                args=COMMA_DELIM.join(len(fields) * '?'),
+                args=self.COMMA_DELIM.join(len(fields) * '?'),
                 data=[v for v in table]
             )
             return 'Data inserted into table: {}'.format(tablename)
@@ -158,7 +170,7 @@ class Controller:
                 db.insert_or_replace(
                     tablename=tablename,
                     fields=d.get_labels(),
-                    args=COMMA_DELIM.join(len(fields) * '?'),
+                    args=self.COMMA_DELIM.join(len(fields) * '?'),
                     data=[v for v in table]
                 )
                 return ['Updated table: {}'.format(tablename)]
