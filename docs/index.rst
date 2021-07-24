@@ -86,12 +86,13 @@ API Reference
    :maxdepth: 2
    :caption: Contents:
 
+   installation.rst
    usage.rst
    cli.rst
    controller.rst
    db_wrapper.rst
    field_factory.rst
-   utils.rst
+   import_export.rst
 
 
 Indices and tables
