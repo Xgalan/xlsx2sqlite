@@ -2,6 +2,7 @@
 """Classes for creating the necessary configuration parsing the options from the .ini file.
 """
 import configparser
+from functools import cached_property
 
 
 
@@ -105,6 +106,7 @@ class Xlsx2sqliteConfig(IniParser):
             else:
                 self.log.append(f'No [{section}] section specified in the .ini file')
 
+    @cached_property
     def get_tables_names(self):
         """Find the names of the tables to import.
 
@@ -112,7 +114,8 @@ class Xlsx2sqliteConfig(IniParser):
         :rtype: set
         """
         return set(self.sections()) - self.get_reserved_words()
-    
+
+    @cached_property
     def get_columns_to_import(self):
         """Retrieve the subset of columns to import as declared in the .ini file.
 
@@ -167,6 +170,7 @@ class Xlsx2sqliteConfig(IniParser):
         """
         return self.OPTIONAL_SECTIONS
 
+    @cached_property
     def get_imports(self):
         """Retrieve the subset of columns to import as declared in the .ini file.
 
