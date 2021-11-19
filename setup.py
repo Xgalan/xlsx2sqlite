@@ -35,6 +35,16 @@ setuptools.setup(
         "Click>=7,<8",
         "colorama"
     ],
+    extras_require={
+        "docs": [
+            "Sphinx",
+            "sphinx-click>=2.7,<3",
+            "sphinx-rtd-theme>=0.5,<0.6"
+        ],
+        "tests": [
+            "pytest>=6,<7"
+        ]
+    },
     include_package_data=True,
     python_requires='>=3.6',
     classifiers=[
