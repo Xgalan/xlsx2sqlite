@@ -38,14 +38,12 @@ Example of a configuration:
     db_url = sqlite:///%(db_file)s
     sql_views = %(root_path)s/views
 
-    [WORKSHEETS]
-    ; list the worksheets to import from the xlsx file.
-    ; use comma-separated values.
-    names = SheetName1,SheetName2
-    ; specify the columns to import from the worksheets, declare as:
-    ; WorksheetName_columns equal to comma-separated values
-    SheetName1_columns = Col1,Col2,Col3
-    SheetName2_columns = Col1,Col2,Col3
+    ; declare to import a worksheet like this :
+
+    ; name of the worksheet to import
+    [SheetName1]
+    ; comma-separated list of the columns to import
+    columns = Col1,Col2,Col3
 
 
 Optional constraints section, add if necessary:

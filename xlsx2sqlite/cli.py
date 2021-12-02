@@ -62,7 +62,7 @@ def update(config, table_name):
     controller = new_controller(config)
     if table_name:
         # Replace operation on sqlite database
-        if table_name in config.get_imports()['worksheets']:
+        if table_name in config.get_tables_names():
             res = controller.insert_or_replace(tablename=table_name)
             click.secho('Finished importing.', bg='green', fg='black')
     [click.echo(msg) for msg in res]
@@ -79,7 +79,7 @@ def drop_tables(config):
     to the worksheets specified in the config file.
     """
     controller = new_controller(config)
-    res = controller.drop_tables(config.get_imports()['worksheets'])
+    res = controller.drop_tables(config.get_tables_names())
     [click.echo(msg) for msg in res]
     controller.close_db()
 
