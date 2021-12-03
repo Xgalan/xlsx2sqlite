@@ -93,18 +93,19 @@ class Xlsx2sqliteConfig(IniParser):
 
     def __init__(self, ini):
         super().__init__()
-        self.import_config(ini)
-        self.log = []
-        try:
-            for section in self.MANDATORY_SECTIONS:
-                assert self.has_section(section)
-        except AssertionError as err:
-            raise KeyError("Must declare all the mandatory sections in the ini file.")
-        for section in list(self.OPTIONAL_SECTIONS.keys()):
-            if self.has_section(section):
-                self.OPTIONAL_SECTIONS[section] = dict(self._parser.items(section))
-            else:
-                self.log.append(f'No [{section}] section specified in the .ini file')
+        if ini:
+            self.import_config(ini)
+            self.log = []
+            try:
+                for section in self.MANDATORY_SECTIONS:
+                    assert self.has_section(section)
+            except AssertionError as err:
+                raise KeyError("Must declare all the mandatory sections in the ini file.")
+            for section in list(self.OPTIONAL_SECTIONS.keys()):
+                if self.has_section(section):
+                    self.OPTIONAL_SECTIONS[section] = dict(self._parser.items(section))
+                else:
+                    self.log.append(f'No [{section}] section specified in the .ini file')
 
     @cached_property
     def get_tables_names(self):
@@ -126,7 +127,7 @@ class Xlsx2sqliteConfig(IniParser):
         :rtype: dict
         """
         return {
-            t: self.get_models()[t]['columns'] for t in self.get_tables_names()
+            t: self.get_models()[t]['columns'] for t in self.get_tables_names
         }
 
     def get_reserved_words(self):
@@ -155,7 +156,7 @@ class Xlsx2sqliteConfig(IniParser):
             except AttributeError as err:
                 raise err
 
-        models = { name: {} for name in self.get_tables_names() }
+        models = { name: {} for name in self.get_tables_names }
         for k in models.keys():
             models[k].update({
                 keyword: get_table_config(k, keyword) for keyword in self.MODEL_KEYWORDS

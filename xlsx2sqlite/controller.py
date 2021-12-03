@@ -20,8 +20,8 @@ class Controller:
             self._ini = ini_config
             self._config = dict(
                 workbook=self._ini.get('xlsx_file'), 
-                worksheets=self._ini.get_tables_names(), 
-                subset_cols=self._ini.get_columns_to_import(),
+                worksheets=self._ini.get_tables_names, 
+                subset_cols=self._ini.get_columns_to_import,
                 headers=self._ini.get_options()['HEADERS'],
                 constraints=self._ini.get_options()['CONSTRAINTS']
             )
@@ -107,6 +107,7 @@ class Controller:
             headers=self._config['headers']
         )
         self.set_constraints(self._config['constraints'])
+        print(self._config)
         messages += [self.create_table(tablename=k) for k in self._collection]
         messages += [self.insert_into(tablename=k) for k in self._collection]
         return messages
