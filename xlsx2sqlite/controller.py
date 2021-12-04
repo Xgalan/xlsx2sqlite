@@ -23,7 +23,7 @@ class Controller:
                 worksheets=self._ini.get_tables_names, 
                 subset_cols=self._ini.get_columns_to_import,
                 headers=self._ini.get_options()['HEADERS'],
-                constraints=self._ini.get_options()['CONSTRAINTS']
+                models=self._ini.get_models
             )
             self.create_db(self._ini.get('db_file'))
 
@@ -51,33 +51,19 @@ class Controller:
         """
         self._db.close_db()
 
-    def set_constraints(self, constraints):
+    def set_constraints(self):
         """Set a representation of the constraints declared in the INI file.
-
-        :param constraints: A dictionary containing table names as keys and
-                            a list of column names as values.
         """
-        if isinstance(constraints, dict):
-            d = {}
+        keywords = ['primary_key', 'unique', 'not_null']
+
+        if self._config['models'] is not None:
             # create a key for every table in the collection
-            [self._constraints.update({k.lower(): {}}) for k in self._collection]
+            [self._constraints.update({k: {}}) for k in self._collection]
             for tablename in self._constraints.keys():
-                d[tablename] = {}
-                [
-                    d[tablename].update({k: constraints[k]}) for k in constraints.keys() if tablename in k
-                ]
-                unique_keys = [v for k,v in d[tablename].items() if 'unique' in k]
-                primary_key = [v for k,v in d[tablename].items() if 'primarykey' in k]
-                if unique_keys:
+                for keyword in keywords:
                     self._constraints[tablename].update(
-                        {'unique': [s.strip() for s in unique_keys[0].split(self.COMMA_DELIM)]}
+                        {keyword: self._config['models'][tablename][keyword]}
                     )
-                if primary_key:
-                    self._constraints[tablename].update(
-                        {'pk': [s.strip() for s in primary_key[0].split(self.COMMA_DELIM)]}
-                    )
-        elif constraints is None:
-            pass
         else:
             raise TypeError
 
@@ -88,8 +74,7 @@ class Controller:
         The collection contains tablib.Dataset instances.
         """
         messages = []
-        """
-        self._config example:
+        """self._config example:
 
         {'workbook': 'C:\\Users\\erikm\\Documents\\Projects\\xlsx2sqlite_api_test/test2.xlsx',
          'worksheets': {'TestSheet', 'TestNonIntegerPrimaryKey'},
@@ -97,8 +82,10 @@ class Controller:
              'Test_id', 'col1', 'col2', 'col3', 'col4', 'col5'
              ], 'TestNonIntegerPrimaryKey': [
              'col1', 'col2', 'col3', 'col4']}, 'headers': {'testsheet_header': '3'},
-            'constraints': {'testsheet_primarykey': 'Test_id,col1', 'testsheet_unique': 'col1',
-                            'testnonintegerprimarykey_primarykey': 'col1'}}
+            'constraints': {'Complex UTF-8 key value àèò§': {'primary_key': ['Order_id', 'Orderdate'], 'unique': None, 'not_null': ['Region', 'Rep', 'Item']},
+                            'SalesOrders_2': {'primary_key': ['Order_id'], 'unique': None, 'not_null': None}
+                            }
+        }
         """
         self.import_tables(
             workbook=self._config['workbook'],
@@ -106,8 +93,7 @@ class Controller:
             subset_cols=self._config['subset_cols'],
             headers=self._config['headers']
         )
-        self.set_constraints(self._config['constraints'])
-        print(self._config)
+        self.set_constraints()
         messages += [self.create_table(tablename=k) for k in self._collection]
         messages += [self.insert_into(tablename=k) for k in self._collection]
         return messages
@@ -118,7 +104,8 @@ class Controller:
         :param tablename: Name of the table to insert into.
         """
         with self._db as db:
-            pk = None if not self._constraints else self._constraints[tablename.lower()]['pk']
+            self.set_constraints()
+            pk = None if not self._constraints else self._constraints[tablename]['primary_key']
             table = self.get(tablename)
             d = Definitions(
                 headers=table.headers,
@@ -152,11 +139,10 @@ class Controller:
                 subset_cols=self._config['subset_cols'],
                 headers=self._config['headers']
             )
-            # set constraints
-            self.set_constraints(self._config['constraints'])
-            pk = None if not self._constraints else self._constraints[tablename.lower()]['pk']
+            self.set_constraints()
+            pk = None if not self._constraints else self._constraints[tablename]['primary_key']
             if pk is None:
-                return ['Must declare a primary key in the [CONSTRAINTS] section.']
+                return ['Must declare a primary key.']
             table = self.get(tablename)
             # retrieve first row from new data
             first_row = dict(zip(table.headers, table[0]))
@@ -194,9 +180,9 @@ class Controller:
         if any(self._constraints) is False:
             constraints = self._constraints
         else:
-            constraints = self._constraints[tablename.lower()]
+            constraints = self._constraints[tablename]
         unique = constraints['unique'] if 'unique' in constraints else None
-        pk = constraints['pk'] if 'pk' in constraints else None
+        pk = constraints['primary_key'] if 'primary_key' in constraints else None
         # create the database table
         with self._db as db:
             table = self.get(tablename)

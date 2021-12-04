@@ -2,7 +2,12 @@
 """Classes for creating the necessary configuration parsing the options from the .ini file.
 """
 import configparser
-from functools import cached_property
+
+try:
+    from functools import cached_property
+except ImportError:
+    # if using python 3.6 / 3.7, install package: 'pip install cached-property'
+    from cached_property import cached_property
 
 
 
@@ -78,13 +83,11 @@ class Xlsx2sqliteConfig(IniParser):
     ]
     
     OPTIONAL_SECTIONS = {
-        'WORKSHEETS': None,
-        'CONSTRAINTS': None,
         'HEADERS': None
     }
 
     MODEL_KEYWORDS = [
-        'worksheet',
+        'db_table',
         'columns',
         'primary_key',
         'unique',
@@ -106,6 +109,17 @@ class Xlsx2sqliteConfig(IniParser):
                     self.OPTIONAL_SECTIONS[section] = dict(self._parser.items(section))
                 else:
                     self.log.append(f'No [{section}] section specified in the .ini file')
+    
+    def get_reserved_words(self):
+        return set([*self.MANDATORY_SECTIONS, *self.OPTIONAL_SECTIONS])
+
+    def get_options(self):
+        """Retrieve values of the optional sections if they exists
+
+        :returns: A dictionary containing the options of the optional sections
+        :rtype: dict
+        """
+        return self.OPTIONAL_SECTIONS
 
     @cached_property
     def get_tables_names(self):
@@ -127,12 +141,10 @@ class Xlsx2sqliteConfig(IniParser):
         :rtype: dict
         """
         return {
-            t: self.get_models()[t]['columns'] for t in self.get_tables_names
+            t: self.get_models[t]['columns'] for t in self.get_tables_names
         }
 
-    def get_reserved_words(self):
-        return set([*self.MANDATORY_SECTIONS, *self.OPTIONAL_SECTIONS])
-
+    @cached_property
     def get_models(self):
         """Returns a representation of the models as configured in the .ini file. 
 
@@ -162,39 +174,3 @@ class Xlsx2sqliteConfig(IniParser):
                 keyword: get_table_config(k, keyword) for keyword in self.MODEL_KEYWORDS
             })
         return models
-
-    def get_options(self):
-        """Retrieve values of the optional sections if they exists
-
-        :returns: A dictionary containing the options of the optional sections
-        :rtype: dict
-        """
-        return self.OPTIONAL_SECTIONS
-
-    @cached_property
-    def get_imports(self):
-        """Retrieve the subset of columns to import as declared in the .ini file.
-
-        :returns: A dictionary with a list of columns names as a representation
-                  for the columns to be retrieved from a worksheet accessing
-                  the `subset_cols` key of the dictionary.
-                  The lists must be declared in the INI configuration file.
-        :rtype: dict
-
-        DEPRECATED: do not use this anymore, backward-compatibility with old config style
-        """
-
-        def get_attrs(names, attribute):
-            try:
-                return dict([
-                    (name, list(self.get(str(name + attribute).lower()).split(
-                        self.COMMA_DELIM))) for name in names
-                ])
-            except IndexError:
-                print('Must set an attribute with: {0}'.format(attribute))
-
-        names = self.get_tables_names()
-        return {
-            'worksheets': names,
-            'subset_cols': get_attrs(names, '_columns')
-        }

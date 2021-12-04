@@ -6,12 +6,11 @@ import xlsx2sqlite.constraint_factory as constraint
 
 
 
-COMMA_DELIM = ','
-
-
 class Definitions:
     """Definitions generator for Sqlite3 tables.
     """
+
+    COMMA_DELIM = ','
 
     def __init__(self, name=None, headers=None, row=None, primary_key=None, unique_keys=None):
         try:
@@ -80,21 +79,7 @@ class Definitions:
             return 'BLOB'
         else:
             return 'TEXT'
-
-    def prepare_sql(self):
-        """Returns the complete sql definition as a string.
-
-        :returns: A string representing the SQL definitions for the CREATE TABLE statement.
-        :rtype: str
-        """
-        fields = self.get_fields()
-        if hasattr(self, 'primary_key'):
-            fields.insert(0, self.primary_key)
-        sql_strings = [field.to_sql() for field in fields]
-        if any(self.table_constraints):
-            [sql_strings.append(costraint.to_sql()) for costraint in self.table_constraints]
-        return COMMA_DELIM.join(sql_strings)
-
+    
     def get_fields(self):
         """Get the list of fields for using as columns definitions.
         This method doesn't return the primary key in the list of fields.
@@ -105,6 +90,21 @@ class Definitions:
         fields = [field.create_field(v['cls'], k, v['type']) for k,v in self._fields.items()]
         return fields
 
+    def prepare_sql(self):
+        """Returns the complete sql definition as a string.
+
+        :returns: A string representing the SQL definitions for the CREATE TABLE statement.
+        :rtype: str
+        """
+        fields = self.get_fields()
+
+        if hasattr(self, 'primary_key'):
+            fields.insert(0, self.primary_key)
+        sql_strings = [field.to_sql() for field in fields]
+        if any(self.table_constraints):
+            [sql_strings.append(costraint.to_sql()) for costraint in self.table_constraints]
+        return self.COMMA_DELIM.join(sql_strings)
+
     def get_labels(self):
         labels = [field.label() for field in self.get_fields()]
-        return COMMA_DELIM.join(labels)
+        return self.COMMA_DELIM.join(labels)

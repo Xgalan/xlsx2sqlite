@@ -51,7 +51,6 @@ def import_worksheets(workbook=None, worksheets=None):
         imported_worksheets = [wb[ws] for ws in wb.sheetnames]
         reset_dimensions(imported_worksheets)
     # import tables from imported worksheets
-    # exclude row that are None ?
     tables = {
         ws.title: [tuple([cell.value for cell in row]) for row in ws.rows] for ws in imported_worksheets
     }

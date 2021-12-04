@@ -14,13 +14,13 @@ class DatabaseWrapper:
     """
 
     SQL_QUERY = {
-        'create_table': 'CREATE TABLE IF NOT EXISTS {name} ({definitions});',
-        'create_view': 'CREATE VIEW IF NOT EXISTS {name} AS {select};',
-        'drop_entity': 'DROP {entity} IF EXISTS {name};',
-        'insert_into': 'INSERT INTO {tablename}({fields}) VALUES ({args});',
-        'replace': """REPLACE INTO {tablename}({fields}) VALUES ({args});""",
-        'select_from': 'SELECT {columns} FROM {from_table};',
-        'table_info': 'PRAGMA table_info({tablename});',
+        'create_table': 'CREATE TABLE IF NOT EXISTS `{name}` ({definitions});',
+        'create_view': 'CREATE VIEW IF NOT EXISTS `{name}` AS {select};',
+        'drop_entity': 'DROP {entity} IF EXISTS `{name}`;',
+        'insert_into': 'INSERT INTO `{tablename}` ({fields}) VALUES ({args});',
+        'replace': """REPLACE INTO `{tablename}` ({fields}) VALUES ({args});""",
+        'select_from': 'SELECT {columns} FROM `{from_table}`;',
+        'table_info': 'PRAGMA table_info(`{tablename}`);',
         }
 
     def __init__(self, path=None):
