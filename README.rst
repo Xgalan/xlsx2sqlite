@@ -44,22 +44,26 @@ Example of a configuration:
     [SheetName1]
     ; comma-separated list of the columns to import
     columns = Col1,Col2,Col3
+    ; composite primary key is supported:
+    primary_key = Col1,Col2
+
+    [SheetName2]
+        ; valid model keywords are:
+        columns = Col1,Col2
+        primary_key = id
+        unique = Col2
+        not_null = Col2
 
 
-Optional constraints section, add if necessary:
+Optional headers section, add if the row with the header is not the first row of the worksheet:
 
 .. code-block:: ini
 
-    [CONSTRAINTS]
-    ; As of now, supported constraints are UNIQUE and "custom" PRIMARY KEY.
-    ; In example:
-    ; worksheetname_UNIQUE equal to list of columns to be created
-    ; with a UNIQUE constraint in the database.
-    SheetName1_unique = Col1
-    SheetName1_primarykey = custom_id
-    ; Can define a primary key on an existing column, of course even
-    ; a non integer primary key, if supported by Sqlite.
-    SheetName2_primarykey = Col1
+    [HEADERS]
+        ; define as name of the worksheet + _header
+        SheetName2_header = 2
+        ; TODO: to be changed with a list of single word equal to number of the row, i.e.:
+        SheetName2 = 2
 
 
 Installation

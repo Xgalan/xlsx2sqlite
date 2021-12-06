@@ -32,14 +32,19 @@ First create a .INI config file that you will pass as an argument to the
 `xlsx2sqlite` command line tool. `xlsx2sqlite` uses the `configparser`
 module from the Python Standard Library.
 
-The INI file must contains this sections:
+The INI file must contains this section:
 
 - PATHS
-- WORKSHEETS
 
-Optional section for defining database constraints:
+and a section for every worksheet you wish to import, i.e.:
 
-- CONSTRAINTS
+[SheetName1]
+
+[SheetName2]
+
+Optional section for defining if the row containing the header of the table is not the first:
+
+- HEADERS
 
 Example of a configuration:
 
@@ -53,30 +58,25 @@ Example of a configuration:
     db_url = sqlite:///%(db_file)s
     sql_views = %(root_path)s/views
 
-    [WORKSHEETS]
-    ; list the worksheets to import from the xlsx file.
-    ; use comma-separated values.
-    names = SheetName1,SheetName2
-    ; specify the columns to import from the worksheets, declare as:
-    ; WorksheetName_columns equal to comma-separated values
-    SheetName1_columns = Col1,Col2,Col3
-    SheetName2_columns = Col1,Col2,Col3
+    [SheetName1]
+    ; every section name must be equal to the name of the worksheet as in the workbook.
+    ; use comma-separated values for defining the values of the keywords.
+    ; valid keywords are: columns, primary_key, unique, not_null.
+    columns = Col1,Col2,Col3 ; declare the columns to import
+    primary_key = id         ; declare the name of the primary key
+    unique = Col1            ; declare the columns which will be created with a UNIQUE clause
+    not_null = Col1          ; declare the columns which will be created with a NOT NULL clause
 
 
-Optional constraints section, add if necessary:
+Optional headers section, add if the row with the header is not the first row of the worksheet:
 
 .. code-block:: ini
 
-    [CONSTRAINTS]
-    ; As of now, supported constraints are UNIQUE and "custom" PRIMARY KEY.
-    ; In example:
-    ; worksheetname_UNIQUE equal to list of columns to be created
-    ; with a UNIQUE constraint in the database.
-    SheetName1_unique = Col1
-    SheetName1_primarykey = custom_id
-    ; Can define a primary key on an existing column, of course even
-    ; a non integer primary key, if supported by Sqlite.
-    SheetName2_primarykey = Col1
+    [HEADERS]
+        ; define as name of the worksheet + _header
+        SheetName2_header = 2
+        ; TODO: to be changed with a list of single word equal to number of the row, i.e.:
+        SheetName2 = 2
 
 
 API Reference
@@ -91,6 +91,7 @@ API Reference
    cli.rst
    controller.rst
    db_wrapper.rst
+   constraint_factory.rst
    field_factory.rst
    import_export.rst
 
