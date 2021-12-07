@@ -41,6 +41,11 @@ def test_mandatory_sections(config, mandatory_sections):
         s = config.has_section(section)
         assert s == True
 
+def test_get_reserved_words(config):
+    """Test get_reserved_words method.
+    """
+    reserved = config.get_reserved_words()
+    assert False, print(reserved)
 
 def test_worksheets_as_sections(config):
     """Test if the listed worksheets to import are declared as sections.

@@ -7,7 +7,10 @@ SPACE_DELIM = ' '
 
 
 def create_table_constraint(clause: str, columns: list) -> object:
-    """Table-level constraint class factory
+    """Table-level constraint class factory, valid clauses are: 
+
+    - "Unique"
+    - "PrimaryKey"
 
     :returns: An instance of TableConstraint, a class that represents a SQL table level constraint
     :rtype: object

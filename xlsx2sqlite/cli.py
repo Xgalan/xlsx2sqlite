@@ -16,10 +16,6 @@ from xlsx2sqlite.controller import Controller
 pass_config = click.make_pass_decorator(Xlsx2sqliteConfig)
 
 
-def new_controller(config):
-    return Controller(ini_config=config)
-
-
 @click.group()
 @click.argument('ini', required=True, type=click.Path(exists=True))
 @click.pass_context
@@ -182,8 +178,3 @@ cli.add_command(drop_views)
 cli.add_command(create_views)
 cli.add_command(export_view)
 cli.add_command(list_def)
-
-
-
-if __name__ == "__main__":
-    cli()

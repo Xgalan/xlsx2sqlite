@@ -83,7 +83,8 @@ class Xlsx2sqliteConfig(IniParser):
     ]
     
     OPTIONAL_SECTIONS = {
-        'HEADERS': None
+        'HEADERS': None,
+        'EXCLUDE': None
     }
 
     MODEL_KEYWORDS = [
@@ -109,9 +110,13 @@ class Xlsx2sqliteConfig(IniParser):
                     self.OPTIONAL_SECTIONS[section] = dict(self._parser.items(section))
                 else:
                     self.log.append(f'No [{section}] section specified in the .ini file')
-    
+
     def get_reserved_words(self):
-        return set([*self.MANDATORY_SECTIONS, *self.OPTIONAL_SECTIONS])
+        if bool(self.get_options()['EXCLUDE']):
+            exclude = self.get_options()['EXCLUDE']['sections'].split(self.COMMA_DELIM)
+            return set([*self.MANDATORY_SECTIONS, *self.OPTIONAL_SECTIONS, *exclude])
+        else:
+            return set([*self.MANDATORY_SECTIONS, *self.OPTIONAL_SECTIONS])
 
     def get_options(self):
         """Retrieve values of the optional sections if they exists

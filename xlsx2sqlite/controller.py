@@ -7,6 +7,18 @@ from xlsx2sqlite.db_wrapper import DatabaseWrapper
 
 
 
+__all__ = ["new_controller"]
+
+
+def new_controller(config: object) -> object:
+    """Controller class factory
+
+    :returns: An instance of Controller
+    :rtype: object
+    """
+    return Controller(ini_config=config)
+
+
 class Controller:
 
     COMMA_DELIM = ','

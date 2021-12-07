@@ -57,8 +57,9 @@ setuptools.setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
-    entry_points='''
-        [console_scripts]
-        xlsx2sqlite=xlsx2sqlite.cli:cli
-    ''',
+    entry_points={
+        'console_scripts': [
+            'xlsx2sqlite = xlsx2sqlite.scripts.console:console',
+        ]
+    },
 )
