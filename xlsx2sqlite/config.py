@@ -6,7 +6,6 @@ import configparser
 try:
     from functools import cached_property
 except ImportError:
-    # if using python 3.6 / 3.7, install package: 'pip install cached-property'
     from cached_property import cached_property
 
 

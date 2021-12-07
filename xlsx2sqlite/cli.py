@@ -10,7 +10,7 @@ import click
 
 from xlsx2sqlite.import_export import export_worksheet
 from xlsx2sqlite.config import Xlsx2sqliteConfig
-from xlsx2sqlite.controller import Controller
+import xlsx2sqlite.controller as ctrl
 
 
 pass_config = click.make_pass_decorator(Xlsx2sqliteConfig)
@@ -40,7 +40,7 @@ def initialize_db(config):
 
     Populates the database with data imported from the worksheets.
     """
-    controller = new_controller(config)
+    controller = ctrl.new_controller(config)
     res = controller.initialize_db()
     click.secho('Finished importing.', bg='green', fg='black')
     [click.echo(msg) for msg in res]
@@ -55,7 +55,7 @@ def initialize_db(config):
 def update(config, table_name):
     """Upsert data on a specified table.
     """
-    controller = new_controller(config)
+    controller = ctrl.new_controller(config)
     if table_name:
         # Replace operation on sqlite database
         if table_name in config.get_tables_names:
@@ -74,7 +74,7 @@ def drop_tables(config):
     Drop only the tables which have a name corresponding
     to the worksheets specified in the config file.
     """
-    controller = new_controller(config)
+    controller = ctrl.new_controller(config)
     res = controller.drop_tables(config.get_tables_names)
     [click.echo(msg) for msg in res]
     controller.close_db()
@@ -88,7 +88,7 @@ def create_views(config):
     Create views on the database loading `*.sql` from the path specified in
     the INI config file. A file must contain a valid `SELECT` query.
     """
-    controller = new_controller(config)
+    controller = ctrl.new_controller(config)
     p = Path(config.get('sql_views'))
     res = [controller.create_view(viewname=f.stem, select=f.read_text()) for f in list(p.glob('**/*.sql'))]
     [click.echo(msg) for msg in res]
@@ -103,7 +103,7 @@ def drop_views(config):
 
     Drop all the views of the database.
     """
-    controller = new_controller(config)
+    controller = ctrl.new_controller(config)
     p = Path(config.get('sql_views'))
     res = [controller.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
     [click.echo(msg) for msg in res]
@@ -134,7 +134,7 @@ def export_view(config, viewname, file_format, dest):
                  'json': lambda _: _.export('json'),
                  'yaml': lambda _: _.export('yaml')}
 
-    controller = new_controller(config)
+    controller = ctrl.new_controller(config)
     res = controller.select_all(table_name=viewname)
     controller.close_db()
     if dest is None and file_format in export_in:
@@ -162,7 +162,7 @@ def export_view(config, viewname, file_format, dest):
 def list_def(config, table_type):
     """List all tables or list all views in the database.
     """
-    controller = new_controller(config)
+    controller = ctrl.new_controller(config)
     if table_type == 'all':
         res = controller.ls_entities()
     else:

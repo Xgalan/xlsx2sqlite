@@ -33,7 +33,8 @@ setuptools.setup(
         "openpyxl>=3,<3.1",
         "tablib==3.0.0",
         "Click>=7,<8",
-        "colorama"
+        "colorama",
+        "cached-property;python_version<='3.7.0'"
     ],
     extras_require={
         "docs": [
