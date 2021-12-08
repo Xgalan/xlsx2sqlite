@@ -31,16 +31,16 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         "openpyxl>=3,<3.1",
-        "tablib==3.0.0",
-        "Click>=7,<8",
+        "tablib>=3.0.0,<=3.1.0",
+        "Click>=7.1,<8.1",
         "colorama",
         "cached-property;python_version<='3.7.0'"
     ],
     extras_require={
         "docs": [
             "Sphinx",
-            "sphinx-click>=2.7,<3",
-            "sphinx-rtd-theme>=0.5,<0.6"
+            "sphinx-click>=2.7,<3.1",
+            "sphinx-rtd-theme==1.0.0"
         ],
         "tests": [
             "pytest>=6,<7"

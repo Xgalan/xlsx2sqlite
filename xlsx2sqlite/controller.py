@@ -4,6 +4,7 @@
 from xlsx2sqlite.definitions_factory import Definitions
 from xlsx2sqlite.dataset import Dataset
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
+from xlsx2sqlite.config import Xlsx2sqliteConfig
 
 
 
@@ -16,7 +17,8 @@ def new_controller(config: object) -> object:
     :returns: An instance of Controller
     :rtype: object
     """
-    return Controller(ini_config=config)
+    ini = Xlsx2sqliteConfig(config)
+    return Controller(ini_config=ini)
 
 
 class Controller:

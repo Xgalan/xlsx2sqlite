@@ -9,11 +9,8 @@ from pathlib import Path
 import click
 
 from xlsx2sqlite.import_export import export_worksheet
-from xlsx2sqlite.config import Xlsx2sqliteConfig
-import xlsx2sqlite.controller as ctrl
+import xlsx2sqlite.controller as controller
 
-
-pass_config = click.make_pass_decorator(Xlsx2sqliteConfig)
 
 
 @click.group()
@@ -24,90 +21,85 @@ def cli(ctx, ini):
     configuration file.
     """
     try:
-        ctx.obj = Xlsx2sqliteConfig(ini)
+        ctx.obj = controller.new_controller(ini)
     except KeyError as err:        
         click.secho(str(err), bg='red', fg='black')
         raise click.Abort
     # check for warning messages
-    [click.secho(msg, bg='yellow', fg='black') for msg in ctx.obj.log]
+    [click.secho(msg, bg='yellow', fg='black') for msg in ctx.obj._ini.log]
     click.secho('Parsed the config file.', bg='green', fg='black')
 
 
 @click.command()
-@pass_config
-def initialize_db(config):
+@click.pass_context
+def initialize_db(ctx):
     """Database creation and initialization.
 
     Populates the database with data imported from the worksheets.
     """
-    controller = ctrl.new_controller(config)
-    res = controller.initialize_db()
+    res = ctx.obj.initialize_db()
     click.secho('Finished importing.', bg='green', fg='black')
     [click.echo(msg) for msg in res]
-    controller.close_db()
+    ctx.obj.close_db()
 
 
 @click.command()
 @click.argument(
     'table-name', type=click.STRING
 )
-@pass_config
-def update(config, table_name):
+@click.pass_context
+def update(ctx, table_name):
     """Upsert data on a specified table.
     """
-    controller = ctrl.new_controller(config)
     if table_name:
         # Replace operation on sqlite database
-        if table_name in config.get_tables_names:
-            res = controller.insert_or_replace(tablename=table_name)
+        if table_name in ctx.obj._ini.get_tables_names:
+            res = ctx.obj.insert_or_replace(tablename=table_name)
             click.secho('Finished importing.', bg='green', fg='black')
     [click.echo(msg) for msg in res]
-    controller.close_db()
+    ctx.obj.close_db()
 
 
 @click.command()
 @click.confirmation_option(prompt='Are you sure you want to drop the tables?')
-@pass_config
-def drop_tables(config):
+@click.pass_context
+def drop_tables(ctx):
     """Drop the tables in the database.
 
     Drop only the tables which have a name corresponding
     to the worksheets specified in the config file.
     """
-    controller = ctrl.new_controller(config)
-    res = controller.drop_tables(config.get_tables_names)
+    res = ctx.obj.drop_tables(ctx.obj._ini.get_tables_names)
     [click.echo(msg) for msg in res]
-    controller.close_db()
+    ctx.obj.close_db()
 
 
 @click.command()
-@pass_config
-def create_views(config):
+@click.pass_context
+def create_views(ctx):
     """Create database views.
 
     Create views on the database loading `*.sql` from the path specified in
     the INI config file. A file must contain a valid `SELECT` query.
     """
-    controller = ctrl.new_controller(config)
-    p = Path(config.get('sql_views'))
-    res = [controller.create_view(viewname=f.stem, select=f.read_text()) for f in list(p.glob('**/*.sql'))]
+    p = Path(ctx.obj._ini.get('sql_views'))
+    res = [ctx.obj.create_view(viewname=f.stem, select=f.read_text()) for f in list(p.glob('**/*.sql'))]
     [click.echo(msg) for msg in res]
-    controller.close_db()
+    ctx.obj.close_db()
 
 
 @click.command()
 @click.confirmation_option(prompt='Are you sure you want to drop the views?')
-@pass_config
-def drop_views(config):
+@click.pass_context
+def drop_views(ctx):
     """Drop the views in the database.
 
     Drop all the views of the database.
     """
-    controller = ctrl.new_controller(config)
-    p = Path(config.get('sql_views'))
-    res = [controller.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
+    p = Path(ctx.obj._ini.get('sql_views'))
+    res = [ctx.obj.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
     [click.echo(msg) for msg in res]
-    controller.close_db()
+    ctx.obj.close_db()
 
 
 @click.command()
@@ -118,8 +110,8 @@ def drop_views(config):
               help='Desired file format for the exported data.')
 @click.option('-o', 'dest', type=click.File('wb'),
               help='Output file for the exported data.')
-@pass_config
-def export_view(config, viewname, file_format, dest):
+@click.pass_context
+def export_view(ctx, viewname, file_format, dest):
     """Export the given database view in the specified format.
 
     Valid file formats are:
@@ -134,9 +126,8 @@ def export_view(config, viewname, file_format, dest):
                  'json': lambda _: _.export('json'),
                  'yaml': lambda _: _.export('yaml')}
 
-    controller = ctrl.new_controller(config)
-    res = controller.select_all(table_name=viewname)
-    controller.close_db()
+    res = ctx.obj.select_all(table_name=viewname)
+    ctx.obj.close_db()
     if dest is None and file_format in export_in:
         click.echo(export_in[file_format](res))
     elif file_format in export_in:
@@ -158,16 +149,15 @@ def export_view(config, viewname, file_format, dest):
 @click.argument('table-type',
                 required=True,
                 type=click.Choice(['table', 'view', 'all']))
-@pass_config
-def list_def(config, table_type):
+@click.pass_context
+def list_def(ctx, table_type):
     """List all tables or list all views in the database.
     """
-    controller = ctrl.new_controller(config)
     if table_type == 'all':
-        res = controller.ls_entities()
+        res = ctx.obj.ls_entities()
     else:
-        res = controller.ls_entities(entity_type=table_type)
-    controller.close_db()
+        res = ctx.obj.ls_entities(entity_type=table_type)
+    ctx.obj.close_db()
     click.echo(res) if res else click.echo('Not found any ' + table_type)
 
 
