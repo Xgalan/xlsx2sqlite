@@ -14,17 +14,17 @@ Usage
 -----
 
 First create a .INI config file that you will pass as an argument to the
-`xlsx2sqlite` command line tool. `xlsx2sqlite` uses the `configparser`
-module from the Python Standard Library.
+`xlsx2sqlite` command line tool. This will serve as a model to import data 
+from the .xlsx file.
 
-The INI file must contains this sections:
+The INI file must contains this section:
 
 - PATHS
-- WORKSHEETS
 
-Optional section for defining database constraints:
+Optional sections, see below:
 
-- CONSTRAINTS
+- HEADERS
+- EXCLUDE
 
 Example of a configuration:
 
@@ -65,6 +65,13 @@ Optional headers section, add if the row with the header is not the first row of
         ; TODO: to be changed with a list of single word equal to number of the row, i.e.:
         SheetName2 = 2
 
+Optional "exclude" section, use if you don't want to import some section of the ini file, 
+this is useful in example for co-exist with some other configuration file.
+
+.. code-block:: ini
+
+    [EXCLUDE]
+        sections = SECTION1,section2,etc. ; use a list of comma-separated values.
 
 Installation
 ------------
