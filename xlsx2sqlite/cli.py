@@ -8,7 +8,6 @@ from pathlib import Path
 
 import click
 
-from xlsx2sqlite.import_export import export_worksheet
 import xlsx2sqlite.controller as controller
 
 
@@ -22,6 +21,8 @@ def cli(ctx, ini):
     """
     try:
         ctx.obj = controller.new_controller(ini)
+        # observer pattern
+        ctx.obj._db.attach(ctx.obj)
     except KeyError as err:        
         click.secho(str(err), bg='red', fg='black')
         raise click.Abort
@@ -37,10 +38,9 @@ def initialize_db(ctx):
 
     Populates the database with data imported from the worksheets.
     """
-    res = ctx.obj.initialize_db()
-    click.secho('Finished importing.', bg='green', fg='black')
-    [click.echo(msg) for msg in res]
+    ctx.obj.initialize_db()
     ctx.obj.close_db()
+    click.secho('Finished importing.', bg='green', fg='black')
 
 
 @click.command()
@@ -54,9 +54,8 @@ def update(ctx, table_name):
     if table_name:
         # Replace operation on sqlite database
         if table_name in ctx.obj._ini.get_tables_names:
-            res = ctx.obj.insert_or_replace(tablename=table_name)
+            ctx.obj.insert_or_replace(tablename=table_name)
             click.secho('Finished importing.', bg='green', fg='black')
-    [click.echo(msg) for msg in res]
     ctx.obj.close_db()
 
 
@@ -69,8 +68,7 @@ def drop_tables(ctx):
     Drop only the tables which have a name corresponding
     to the worksheets specified in the config file.
     """
-    res = ctx.obj.drop_tables(ctx.obj._ini.get_tables_names)
-    [click.echo(msg) for msg in res]
+    ctx.obj.drop_tables(ctx.obj._ini.get_tables_names)
     ctx.obj.close_db()
 
 
@@ -83,8 +81,7 @@ def create_views(ctx):
     the INI config file. A file must contain a valid `SELECT` query.
     """
     p = Path(ctx.obj._ini.get('sql_views'))
-    res = [ctx.obj.create_view(viewname=f.stem, select=f.read_text()) for f in list(p.glob('**/*.sql'))]
-    [click.echo(msg) for msg in res]
+    [ctx.obj.create_view(viewname=f.stem, select=f.read_text()) for f in list(p.glob('**/*.sql'))]
     ctx.obj.close_db()
 
 
@@ -97,8 +94,7 @@ def drop_views(ctx):
     Drop all the views of the database.
     """
     p = Path(ctx.obj._ini.get('sql_views'))
-    res = [ctx.obj.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
-    [click.echo(msg) for msg in res]
+    [ctx.obj.drop_view(viewname=f.stem) for f in list(p.glob('**/*.sql'))]
     ctx.obj.close_db()
 
 
@@ -135,7 +131,7 @@ def export_view(ctx, viewname, file_format, dest):
         dest.close()
         click.echo('Created file: ' + dest.name)
     elif file_format == 'xlsx':
-        export_worksheet(filename=dest, ws_name=viewname, rows=res)
+        ctx.obj.export_worksheet(filename=dest, viewname=viewname, rows=res)
         click.echo('Created file: ' + dest.name)
     elif file_format == 'dbf':
         dest.write(bytes(res.export('dbf')))

@@ -124,6 +124,14 @@ class Xlsx2sqliteConfig(IniParser):
         :rtype: dict
         """
         return self.OPTIONAL_SECTIONS
+    
+    def get_model_keywords(self):
+        """Return the keywords that can be used to define a model
+
+        :returns: A list containing all the keywords used to define a model 
+        :rtype: list
+        """
+        return self.MODEL_KEYWORDS
 
     @cached_property
     def get_tables_names(self):

@@ -5,6 +5,7 @@ from xlsx2sqlite.definitions_factory import Definitions
 from xlsx2sqlite.dataset import Dataset
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
 from xlsx2sqlite.config import Xlsx2sqliteConfig
+from xlsx2sqlite.import_export import export_worksheet
 
 
 
@@ -50,6 +51,9 @@ class Controller:
         def wrapper(*args, **kwargs):
             return attr(*args, **kwargs)
         return wrapper
+    
+    def update(self, subject):
+        print(subject.log[-1])
 
     def create_db(self, db_file):
         """Creates a connection with the specified Sqlite3 database.
@@ -68,7 +72,7 @@ class Controller:
     def set_constraints(self):
         """Set a representation of the constraints declared in the INI file.
         """
-        keywords = ['primary_key', 'unique', 'not_null']
+        keywords = self._ini.get_model_keywords()
 
         if self._config['models'] is not None:
             # create a key for every table in the collection
@@ -87,20 +91,6 @@ class Controller:
 
         The collection contains tablib.Dataset instances.
         """
-        messages = []
-        """self._config example:
-
-        {'workbook': 'C:\\Users\\erikm\\Documents\\Projects\\xlsx2sqlite_api_test/test2.xlsx',
-         'worksheets': {'TestSheet', 'TestNonIntegerPrimaryKey'},
-         'subset_cols': {'TestSheet': [
-             'Test_id', 'col1', 'col2', 'col3', 'col4', 'col5'
-             ], 'TestNonIntegerPrimaryKey': [
-             'col1', 'col2', 'col3', 'col4']}, 'headers': {'testsheet_header': '3'},
-            'constraints': {'Complex UTF-8 key value àèò§': {'primary_key': ['Order_id', 'Orderdate'], 'unique': None, 'not_null': ['Region', 'Rep', 'Item']},
-                            'SalesOrders_2': {'primary_key': ['Order_id'], 'unique': None, 'not_null': None}
-                            }
-        }
-        """
         self.import_tables(
             workbook=self._config['workbook'],
             worksheets=self._config['worksheets'],
@@ -108,9 +98,8 @@ class Controller:
             headers=self._config['headers']
         )
         self.set_constraints()
-        messages += [self.create_table(tablename=k) for k in self._collection]
-        messages += [self.insert_into(tablename=k) for k in self._collection]
-        return messages
+        [self.create_table(tablename=k) for k in self._collection]
+        [self.insert_into(tablename=k) for k in self._collection]
 
     def insert_into(self, tablename=None):
         """Insert data into the declared table.
@@ -133,7 +122,6 @@ class Controller:
                 args=self.COMMA_DELIM.join(len(fields) * '?'),
                 data=[v for v in table]
             )
-            return 'Data inserted into table: {}'.format(tablename)
 
     def insert_or_replace(self, tablename=None):
         """Perform a REPLACE operation on the database.
@@ -143,7 +131,7 @@ class Controller:
         with self._db as db:
             tinfo = db.table_info(tablename=tablename)
             if tinfo == []:
-                return ['Table {} not found.'.format(tablename)]
+                print('Table {} not found.'.format(tablename))
             db_pk = [dict(i) for i in tinfo if dict(i)['pk']==True][0]['name']
             if db_pk not in self._config['subset_cols'][tablename]:
                 self._config['subset_cols'][tablename].insert(0, db_pk)
@@ -156,7 +144,7 @@ class Controller:
             self.set_constraints()
             pk = None if not self._constraints else self._constraints[tablename]['primary_key']
             if pk is None:
-                return ['Must declare a primary key.']
+                print('Must declare a primary key.')
             table = self.get(tablename)
             # retrieve first row from new data
             first_row = dict(zip(table.headers, table[0]))
@@ -174,11 +162,8 @@ class Controller:
                     args=self.COMMA_DELIM.join(len(fields) * '?'),
                     data=[v for v in table]
                 )
-                return ['Updated table: {}'.format(tablename)]
             else:
-                return [
-                    'Primary Key not found on {}, REPLACE operation aborted.'.format(tablename)
-                ]
+                print('Primary Key not found on {}, REPLACE operation aborted.'.format(tablename))
 
     def create_table(self, tablename=None):
         """Create a new table in the database.
@@ -207,14 +192,14 @@ class Controller:
                 unique_keys=unique,
                 primary_key=pk
             )
-            return db.create_table(tablename=d.tablename, definitions=d.prepare_sql())
+            db.create_table(tablename=d.tablename, definitions=d.prepare_sql())
 
     def drop_tables(self, tables_list):
         """Drop all the database tables with a name in the list.
 
         :param tables_list: List of tables names to drop from the database.
         """
-        return [self.drop_table(tablename=k) for k in tables_list]
+        [self.drop_table(tablename=k) for k in tables_list]
 
     def drop_table(self, tablename=None):
         """Drop the database table with the corresponding name.
@@ -222,7 +207,7 @@ class Controller:
         :key tablename: Name of the table to drop from the database.
         """
         with self._db as db:
-            return db.drop_entity(entity_name=tablename, entity_type='TABLE')
+            db.drop_entity(entity_name=tablename, entity_type='TABLE')
 
     def create_view(self, viewname=None, select=None):
         """Create a database view.
@@ -231,7 +216,7 @@ class Controller:
         :key select: `SELECT` query statement.
         """
         with self._db as db:
-            return db.create_view(viewname=viewname, select=select)
+            db.create_view(viewname=viewname, select=select)
 
     def drop_view(self, viewname=None):
         """Drop the database view with the corresponding name.
@@ -239,7 +224,7 @@ class Controller:
         :key viewname: Name of the view to drop from the database.
         """
         with self._db as db:
-            return db.drop_entity(entity_name=viewname, entity_type='VIEW')
+            db.drop_entity(entity_name=viewname, entity_type='VIEW')
 
     def select_all(self, table_name=None, where_clause=None):
         """Perform a `SELECT *` SQL query on the database.
@@ -278,3 +263,8 @@ class Controller:
             return q.subset(cols=['type', 'name'])
         else:
             return None
+    
+    def export_worksheet(self, filename=None, viewname=None, rows=None):
+        """Relay function to export_worksheet
+        """
+        export_worksheet(filename=filename, ws_name=viewname, rows=rows)

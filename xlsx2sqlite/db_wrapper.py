@@ -1,9 +1,29 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 
+from contextlib import suppress
 
 
-class DatabaseWrapper:
+
+class Subject:
+    def __init__(self):
+        self._observers = []
+    
+    def attach(self, observer):
+        if observer not in self._observers:
+            self._observers.append(observer)
+    
+    def detach(self, observer):
+        with suppress(ValueError):
+            self._observers.remove(observer)
+    
+    def notify(self, modifier=None):
+        for observer in self._observers:
+            if modifier != observer:
+                observer.update(self)
+
+
+class DatabaseWrapper(Subject):
     """Class that interface with sqlite3 standard library module.
 
     Creates a database connection.
@@ -24,10 +44,12 @@ class DatabaseWrapper:
         }
 
     def __init__(self, path=None):
+        super().__init__()
         if path is None:
             self._db = sqlite3.connect(':memory:', detect_types=sqlite3.PARSE_DECLTYPES)
         else:
             self._db = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
+        self._log = []
 
     def __enter__(self):
         return self
@@ -40,6 +62,15 @@ class DatabaseWrapper:
         except:
             print('Error while committing changes to database.')
         return True
+    
+    @property
+    def log(self):
+        return self._log
+
+    @log.setter
+    def log(self, message):
+        self._log.append(message)
+        self.notify()
 
     def close_db(self):
         """Closes the connection to the database."""
@@ -51,7 +82,8 @@ class DatabaseWrapper:
             if q.endswith(';;'):
                 q = q[:-1]
             self._db.execute(q)
-            return messages['success']
+            # observer pattern
+            self.log = messages['success']
         except sqlite3.OperationalError as e:
             self._db.rollback()
             raise sqlite3.OperationalError(messages['error'] + str(e))
@@ -73,7 +105,7 @@ class DatabaseWrapper:
         parameters = {'name': tablename, 'definitions': definitions}
         messages = {'error': 'Error when creating table: ',
                     'success': 'Created table: ' + parameters['name']}
-        return self._execute(self.SQL_QUERY['create_table'], parameters, messages)
+        self._execute(self.SQL_QUERY['create_table'], parameters, messages)
 
     def create_view(self, viewname=None, select=None):
         """The CREATE VIEW command assigns a name to a pre-packaged SELECT
@@ -93,7 +125,7 @@ class DatabaseWrapper:
         parameters = {'name': viewname, 'select':  select}
         messages = {'error': 'Error when creating view: ',
                     'success': 'Created view: ' + parameters['name']}
-        return self._execute(self.SQL_QUERY['create_view'], parameters, messages)
+        self._execute(self.SQL_QUERY['create_view'], parameters, messages)
 
     def drop_entity(self, entity_name=None, entity_type=None):
         """Drop the specified entity from the database.
@@ -117,11 +149,13 @@ class DatabaseWrapper:
         messages = {'error': 'Error when deleting ' + entity_type + ' ' + entity_name,
                     'success': 'Deleted ' + entity_type + ' ' + entity_name}
         if entity_type in ['TABLE', 'VIEW']:
-            return self._execute(self.SQL_QUERY['drop_entity'], parameters, messages)
+            self._execute(self.SQL_QUERY['drop_entity'], parameters, messages)
 
-    def _executemany(self, query, parameters, data):
+    def _executemany(self, query, parameters, data, messages):
         try:
             self._db.executemany(query.format(**parameters), data)
+            # observer pattern
+            self.log = messages['success']
         except sqlite3.OperationalError as e:
             self._db.rollback()
             raise sqlite3.OperationalError(str(e))
@@ -136,7 +170,8 @@ class DatabaseWrapper:
                    to the SQL statement.
         """
         parameters = {'tablename': tablename, 'fields': fields, 'args': args}
-        self._executemany(self.SQL_QUERY['insert_into'], parameters, data)
+        messages = {'success': 'Data inserted into table: {}'.format(tablename)}
+        self._executemany(self.SQL_QUERY['insert_into'], parameters, data, messages)
 
     def insert_or_replace(self, tablename=None, fields=None, args=None, data=None):
         """Perform a `REPLACE` operation on the database.
@@ -148,7 +183,8 @@ class DatabaseWrapper:
                    to the SQL statement.
         """
         parameters = {'tablename': tablename, 'fields': fields, 'args': args}
-        self._executemany(self.SQL_QUERY['replace'], parameters, data)
+        messages = {'success': 'Updated table: {}'.format(tablename)}
+        self._executemany(self.SQL_QUERY['replace'], parameters, data, messages)
 
     def table_info(self, tablename=None):
         """Executes a `PRAGMA` query on the database.
