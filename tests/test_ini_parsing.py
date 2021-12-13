@@ -45,7 +45,7 @@ def test_get_reserved_words(config):
     """Test get_reserved_words method.
     """
     reserved = config.get_reserved_words()
-    assert False, print(reserved)
+    assert any(reserved)
 
 def test_worksheets_as_sections(config):
     """Test if the listed worksheets to import are declared as sections.

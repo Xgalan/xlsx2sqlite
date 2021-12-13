@@ -49,7 +49,9 @@ class IniParser:
             if option in self.options:
                 return self.options[option]
             else:
-                return [v[option] for k,v in self.options.items() if option in v][0]
+                l = [v[option] for k,v in self.options.items() if option in v]
+                if l:
+                    return l[0]
         except KeyError as e:
             raise KeyError((str(e) + " not in the options list."))
 

@@ -4,6 +4,7 @@ import pytest
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
 
 
+
 @pytest.fixture()
 def definitions():
     return """ 'id' INTEGER PRIMARY KEY, \
@@ -40,4 +41,3 @@ def test_insert_into(definitions, fake_data):
     s = db.select(from_table=NAME)
     res = [row for row in s]
     assert any(res)
-    
