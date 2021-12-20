@@ -33,12 +33,11 @@ class Controller:
         self._constraints = {}
         if ini_config is not None:
             self._ini = ini_config
+            self._workbook = self._ini.get('xlsx_file')
+            self._worksheets = self._ini.get_tables_names
+            self._models = self._ini.get_models
             self._config = dict(
-                workbook=self._ini.get('xlsx_file'), 
-                worksheets=self._ini.get_tables_names, 
-                subset_cols=self._ini.get_columns_to_import,
-                headers=self._ini.get_options()['HEADERS'],
-                models=self._ini.get_models
+                headers=self._ini.get_options()['HEADERS']
             )
             self.create_db(self._ini.get('db_file'))
 
@@ -74,13 +73,13 @@ class Controller:
         """
         keywords = self._ini.get_model_keywords()
 
-        if self._config['models'] is not None:
+        if self._models is not None:
             # create a key for every table in the collection
             [self._constraints.update({k: {}}) for k in self._collection]
             for tablename in self._constraints.keys():
                 for keyword in keywords:
                     self._constraints[tablename].update(
-                        {keyword: self._config['models'][tablename][keyword]}
+                        {keyword: self._models[tablename][keyword]}
                     )
         else:
             raise TypeError
@@ -92,9 +91,9 @@ class Controller:
         The collection contains tablib.Dataset instances.
         """
         self.import_tables(
-            workbook=self._config['workbook'],
-            worksheets=self._config['worksheets'],
-            subset_cols=self._config['subset_cols'],
+            workbook=self._workbook,
+            worksheets=self._worksheets,
+            subset_cols=self._ini.get_columns_to_import,
             headers=self._config['headers']
         )
         self.set_constraints()
@@ -133,12 +132,13 @@ class Controller:
             if tinfo == []:
                 print('Table {} not found.'.format(tablename))
             db_pk = [dict(i) for i in tinfo if dict(i)['pk']==True][0]['name']
-            if db_pk not in self._config['subset_cols'][tablename]:
-                self._config['subset_cols'][tablename].insert(0, db_pk)
+            columns = self._ini.get_columns_to_import[tablename]
+            if db_pk not in columns:
+                columns.insert(0, db_pk)
             self.import_tables(
-                workbook=self._config['workbook'],
-                worksheets=self._config['worksheets'],
-                subset_cols=self._config['subset_cols'],
+                workbook=self._workbook,
+                worksheets=self._worksheets,
+                subset_cols=columns,
                 headers=self._config['headers']
             )
             self.set_constraints()
