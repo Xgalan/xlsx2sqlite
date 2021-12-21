@@ -39,6 +39,7 @@ class Controller:
             self._config = dict(
                 headers=self._ini.get_options()['HEADERS']
             )
+            print(self._ini.get_db_tables_names)
             self.create_db(self._ini.get('db_file'))
 
     def __getattr__(self, name):
@@ -83,6 +84,22 @@ class Controller:
                     )
         else:
             raise TypeError
+    
+    def get_db_table_name(self, tablename):
+        """Return the name to give to the database table.
+
+        :param tablename: Name of the table to check if it is declared a 'db_table' attribute 
+                          in the INI file.
+        :returns: A string representing the name of the database table as declared 
+                  in the INI file.
+        :rtype: string
+        """
+        db_table = self._ini.get_db_tables_names[tablename]
+        if isinstance(db_table, list):
+                db_table = db_table[0]
+        else:
+            db_table = tablename
+        return db_table
 
     def initialize_db(self):
         """Creates the database tables and populates them with the data
@@ -116,7 +133,7 @@ class Controller:
             )
             fields = d.get_fields()
             db.insert_into(
-                tablename=tablename,
+                tablename=self.get_db_table_name(tablename),
                 fields=d.get_labels(),
                 args=self.COMMA_DELIM.join(len(fields) * '?'),
                 data=[v for v in table]
@@ -128,9 +145,10 @@ class Controller:
         :param tablename: Name of the table on which to perform the REPLACE operation.
         """
         with self._db as db:
-            tinfo = db.table_info(tablename=tablename)
+            db_table = self.get_db_table_name(tablename)
+            tinfo = db.table_info(tablename=db_table)
             if tinfo == []:
-                print('Table {} not found.'.format(tablename))
+                raise RuntimeError('Table {} not found.'.format(tablename))
             db_pk = [dict(i) for i in tinfo if dict(i)['pk']==True][0]['name']
             columns = self._ini.get_columns_to_import[tablename]
             if db_pk not in columns:
@@ -157,13 +175,13 @@ class Controller:
             # check if the primary key is in new data
             if db_pk in first_row:
                 db.insert_or_replace(
-                    tablename=tablename,
+                    tablename=db_table,
                     fields=d.get_labels(),
                     args=self.COMMA_DELIM.join(len(fields) * '?'),
                     data=[v for v in table]
                 )
             else:
-                print('Primary Key not found on {}, REPLACE operation aborted.'.format(tablename))
+                raise RuntimeError('Primary Key not found on {}, REPLACE operation aborted.'.format(tablename))
 
     def create_table(self, tablename=None):
         """Create a new table in the database.
@@ -186,7 +204,7 @@ class Controller:
         with self._db as db:
             table = self.get(tablename)
             d = Definitions(
-                name=tablename,
+                name=self.get_db_table_name(tablename),
                 headers=table.headers,
                 row=table[0],
                 unique_keys=unique,

@@ -159,6 +159,17 @@ class Xlsx2sqliteConfig(IniParser):
         }
 
     @cached_property
+    def get_db_tables_names(self):
+        """Retrieve the names to give to the database tables, if any.
+
+        :returns: A dictionary with the choosen names to set as the database tables names.
+        :rtype: dict
+        """
+        return {
+            t: self.get_models[t]['db_table'] for t in self.get_tables_names
+        }
+
+    @cached_property
     def get_models(self):
         """Returns a representation of the models as configured in the .ini file. 
 
