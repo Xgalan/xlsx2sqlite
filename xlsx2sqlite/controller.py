@@ -39,7 +39,6 @@ class Controller:
             self._config = dict(
                 headers=self._ini.get_options()['HEADERS']
             )
-            print(self._ini.get_db_tables_names)
             self.create_db(self._ini.get('db_file'))
 
     def __getattr__(self, name):
@@ -84,7 +83,7 @@ class Controller:
                     )
         else:
             raise TypeError
-    
+
     def get_db_table_name(self, tablename):
         """Return the name to give to the database table.
 

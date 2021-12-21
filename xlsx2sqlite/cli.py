@@ -68,7 +68,8 @@ def drop_tables(ctx):
     Drop only the tables which have a name corresponding
     to the worksheets specified in the config file.
     """
-    ctx.obj.drop_tables(ctx.obj._ini.get_tables_names)
+    db_tables = [ctx.obj.get_db_table_name(tablename) for tablename in ctx.obj._ini.get_tables_names]
+    ctx.obj.drop_tables(db_tables)
     ctx.obj.close_db()
 
 
