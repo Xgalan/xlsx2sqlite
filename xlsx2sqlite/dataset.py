@@ -7,8 +7,7 @@ from xlsx2sqlite.import_export import import_worksheets
 
 
 class Dataset:
-    """Container class for tablib.Dataset instances.
-    """
+    """Container class for tablib.Dataset instances."""
 
     _tables = dict()
     _dataset = tablib.Dataset
@@ -29,7 +28,9 @@ class Dataset:
     def __getitem__(self, key):
         return self._tables[key]
 
-    def import_tables(self, workbook=None, worksheets=None, subset_cols=None, headers=None):
+    def import_tables(
+        self, workbook=None, worksheets=None, subset_cols=None, headers=None
+    ):
         """Import the specified worksheets into the tables collection.
 
         :key workbook: Path of the xlsx file to open for import.
@@ -37,19 +38,17 @@ class Dataset:
         :key subset: List of columns in the worksheet to consider for import.
         """
         tables = import_worksheets(workbook=workbook, worksheets=worksheets)
-        for tbl_name,values in tables.items():
+        for tbl_name, values in tables.items():
             if headers:
-                tablename = tbl_name.lower() + '_header'
+                tablename = tbl_name.lower() + "_header"
                 if tablename in headers:
                     row_nr = int(headers[tablename]) - 1
                     if row_nr > 0:
                         values = values[row_nr:]
                     else:
-                        print('Header row must be 1 or greater.')
+                        print("Header row must be 1 or greater.")
             header = values.pop(0)
-            self._tables[tbl_name] = self._dataset(
-                *values, headers=header
-            ).subset(
+            self._tables[tbl_name] = self._dataset(*values, headers=header).subset(
                 cols=subset_cols[tbl_name]
             )
 

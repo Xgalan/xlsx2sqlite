@@ -33,9 +33,10 @@ def import_worksheets(workbook=None, worksheets=None):
     :returns: A representation of a table with data from the
               imported worksheets.
     """
+
     def reset_dimensions(worksheets):
         """Necessary as to not import a huge amount of empty cells.
-        Call appropriate methods from openpyxl to set the correct dimensions of 
+        Call appropriate methods from openpyxl to set the correct dimensions of
         the worksheets.
         """
         [ws.reset_dimensions() for ws in worksheets]
@@ -51,7 +52,8 @@ def import_worksheets(workbook=None, worksheets=None):
         reset_dimensions(imported_worksheets)
     # import tables from imported worksheets
     tables = {
-        ws.title: [tuple([cell.value for cell in row]) for row in ws.rows] for ws in imported_worksheets
+        ws.title: [tuple([cell.value for cell in row]) for row in ws.rows]
+        for ws in imported_worksheets
     }
     wb.close()
     return tables

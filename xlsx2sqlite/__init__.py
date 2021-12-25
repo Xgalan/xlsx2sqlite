@@ -3,5 +3,5 @@
 from xlsx2sqlite.__version__ import __version__
 
 __version__ = __version__
-__author__ = 'Erik Mascheri <erik.mascheri@gmail.com>'
+__author__ = "Erik Mascheri <erik.mascheri@gmail.com>"
 __all__ = []

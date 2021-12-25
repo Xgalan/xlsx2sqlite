@@ -2,8 +2,8 @@
 __all__ = ["create_field"]
 
 
-COMMA_DELIM = ','
-SPACE_DELIM = ' '
+COMMA_DELIM = ","
+SPACE_DELIM = " "
 
 
 def create_field(type_of: str, field_name: str, field_type: str) -> object:
@@ -21,7 +21,7 @@ def create_field(type_of: str, field_name: str, field_type: str) -> object:
     :type field_name: str
     :param field_type: Column type as a string defined in sqlite column types.
     :type field_type: str
-    :returns: An instance of a Field object with a to_sql() method that returns an 
+    :returns: An instance of a Field object with a to_sql() method that returns an
               appropriate SQL string.
     :rtype: object
     """
@@ -30,22 +30,21 @@ def create_field(type_of: str, field_name: str, field_type: str) -> object:
         "Field": Field,
         "Unique": UniqueField,
         "PrimaryKey": PrimaryKey,
-        "NotNullField": NotNullField
+        "NotNullField": NotNullField,
     }
     return fields[type_of](field_name, field_type)
 
 
 class Field:
-    """Represents a database field.
-    """
+    """Represents a database field."""
 
     def __init__(self, field_name=None, field_type=None):
         self.field_name = field_name
         self.field_type = field_type
 
     def __repr__(self):
-        return f'<Field {self.field_name}, type={self.field_type}>'
-    
+        return f"<Field {self.field_name}, type={self.field_type}>"
+
     def label(self):
         """A form of the string with the leading and trailing characters removed.
 
@@ -53,9 +52,9 @@ class Field:
         :rtype: str
         """
         backtick = "`"
-        label = f'{backtick}{self.field_name.strip()}{backtick}'
+        label = f"{backtick}{self.field_name.strip()}{backtick}"
         return label
-    
+
     def to_sql(self):
         """Return a suitable string for using in the database.
 
@@ -73,7 +72,7 @@ class AddDefinitionMixin:
     """
 
     def __repr__(self):
-        return f'<Field {self.field_name}, type={self.field_type} definition={self.definition}>'
+        return f"<Field {self.field_name}, type={self.field_type} definition={self.definition}>"
 
     def to_sql(self):
         """Return a suitable string for using in the database.
@@ -82,12 +81,11 @@ class AddDefinitionMixin:
                   and trailing characters removed.
         :rtype: str
         """
-        return SPACE_DELIM.join((self.label(), self.field_type, self.definition)) 
+        return SPACE_DELIM.join((self.label(), self.field_type, self.definition))
 
 
 class PrimaryKey(AddDefinitionMixin, Field):
-    """Represents the primary key for a database table.
-    """
+    """Represents the primary key for a database table."""
 
     def __init__(self, field_name, field_type):
         super().__init__(field_name, field_type)
@@ -95,8 +93,7 @@ class PrimaryKey(AddDefinitionMixin, Field):
 
 
 class UniqueField(AddDefinitionMixin, Field):
-    """Represents a field with a UNIQUE clause.
-    """
+    """Represents a field with a UNIQUE clause."""
 
     def __init__(self, field_name, field_type):
         super().__init__(field_name, field_type)
@@ -104,8 +101,7 @@ class UniqueField(AddDefinitionMixin, Field):
 
 
 class NotNullField(AddDefinitionMixin, Field):
-    """A field with the NOT NULL clause.
-    """
+    """A field with the NOT NULL clause."""
 
     def __init__(self, field_name, field_type):
         super().__init__(field_name, field_type)

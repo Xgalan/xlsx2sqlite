@@ -9,12 +9,11 @@ except ImportError:
     from cached_property import cached_property
 
 
-
 class IniParser:
     """Representation for accessing the options of the parsed
     configuration file.
     """
-    
+
     def __init__(self, options=None):
         self.options = options
         self._parser = configparser.ConfigParser()
@@ -22,9 +21,9 @@ class IniParser:
     def __iter__(self):
         for option in self.options:
             yield option
-    
+
     def __repr__(self) -> str:
-        return f'<Configuration: {self.options}>'
+        return f"<Configuration: {self.options}>"
 
     def sections(self):
         """List all the sections parsed from the INI file.
@@ -33,7 +32,7 @@ class IniParser:
         :rtype: list
         """
         return [section for section in self.options]
-    
+
     def has_section(self, section):
         return self._parser.has_section(section)
 
@@ -49,7 +48,7 @@ class IniParser:
             if option in self.options:
                 return self.options[option]
             else:
-                l = [v[option] for k,v in self.options.items() if option in v]
+                l = [v[option] for k, v in self.options.items() if option in v]
                 if l:
                     return l[0]
         except KeyError as e:
@@ -74,27 +73,17 @@ class IniParser:
 
 
 class Xlsx2sqliteConfig(IniParser):
-    """Config model for xlsx2sqlite, checks if the supplied file is conformant with the specifications.
-    """
+    """Config model for xlsx2sqlite, checks if the supplied file is conformant with the specifications."""
 
-    COMMA_DELIM = ','
-    
+    COMMA_DELIM = ","
+
     MANDATORY_SECTIONS = [
-        'PATHS',
+        "PATHS",
     ]
-    
-    OPTIONAL_SECTIONS = {
-        'HEADERS': None,
-        'EXCLUDE': None
-    }
 
-    MODEL_KEYWORDS = [
-        'db_table',
-        'columns',
-        'primary_key',
-        'unique',
-        'not_null'
-    ]
+    OPTIONAL_SECTIONS = {"HEADERS": None, "EXCLUDE": None}
+
+    MODEL_KEYWORDS = ["db_table", "columns", "primary_key", "unique", "not_null"]
 
     def __init__(self, ini):
         super().__init__()
@@ -105,16 +94,20 @@ class Xlsx2sqliteConfig(IniParser):
                 for section in self.MANDATORY_SECTIONS:
                     assert self.has_section(section)
             except AssertionError as err:
-                raise KeyError("Must declare all the mandatory sections in the ini file.")
+                raise KeyError(
+                    "Must declare all the mandatory sections in the ini file."
+                )
             for section in list(self.OPTIONAL_SECTIONS.keys()):
                 if self.has_section(section):
                     self.OPTIONAL_SECTIONS[section] = dict(self._parser.items(section))
                 else:
-                    self.log.append(f'No [{section}] section specified in the .ini file')
+                    self.log.append(
+                        f"No [{section}] section specified in the .ini file"
+                    )
 
     def get_reserved_words(self):
-        if bool(self.get_options()['EXCLUDE']):
-            exclude = self.get_options()['EXCLUDE']['sections'].split(self.COMMA_DELIM)
+        if bool(self.get_options()["EXCLUDE"]):
+            exclude = self.get_options()["EXCLUDE"]["sections"].split(self.COMMA_DELIM)
             return set([*self.MANDATORY_SECTIONS, *self.OPTIONAL_SECTIONS, *exclude])
         else:
             return set([*self.MANDATORY_SECTIONS, *self.OPTIONAL_SECTIONS])
@@ -126,11 +119,11 @@ class Xlsx2sqliteConfig(IniParser):
         :rtype: dict
         """
         return self.OPTIONAL_SECTIONS
-    
+
     def get_model_keywords(self):
         """Return the keywords that can be used to define a model
 
-        :returns: A list containing all the keywords used to define a model 
+        :returns: A list containing all the keywords used to define a model
         :rtype: list
         """
         return self.MODEL_KEYWORDS
@@ -154,9 +147,7 @@ class Xlsx2sqliteConfig(IniParser):
                   The lists must be declared in the INI configuration file.
         :rtype: dict
         """
-        return {
-            t: self.get_models[t]['columns'] for t in self.get_tables_names
-        }
+        return {t: self.get_models[t]["columns"] for t in self.get_tables_names}
 
     @cached_property
     def get_db_tables_names(self):
@@ -165,37 +156,32 @@ class Xlsx2sqliteConfig(IniParser):
         :returns: A dictionary with the choosen names to set as the database tables names.
         :rtype: dict
         """
-        return {
-            t: self.get_models[t]['db_table'] for t in self.get_tables_names
-        }
+        return {t: self.get_models[t]["db_table"] for t in self.get_tables_names}
 
     @cached_property
     def get_models(self):
-        """Returns a representation of the models as configured in the .ini file. 
+        """Returns a representation of the models as configured in the .ini file.
 
         :returns: A representation of the models parsed from the .ini file.
         :rtype: dict
         """
-        
+
         def get_table_config(table, attr):
             try:
-                d = dict({
-                    attr: self._parser.get(
-                        table, attr, fallback=None
-                    )
-                })
+                d = dict({attr: self._parser.get(table, attr, fallback=None)})
                 if isinstance(d[attr], str):
-                    return d[attr].split(
-                        self.COMMA_DELIM
-                    )
+                    return d[attr].split(self.COMMA_DELIM)
                 else:
                     return None
             except AttributeError as err:
                 raise err
 
-        models = { name: {} for name in self.get_tables_names }
+        models = {name: {} for name in self.get_tables_names}
         for k in models.keys():
-            models[k].update({
-                keyword: get_table_config(k, keyword) for keyword in self.MODEL_KEYWORDS
-            })
+            models[k].update(
+                {
+                    keyword: get_table_config(k, keyword)
+                    for keyword in self.MODEL_KEYWORDS
+                }
+            )
         return models

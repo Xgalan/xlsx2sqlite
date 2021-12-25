@@ -7,4 +7,3 @@ def xlsx2sqlite():
 
 
 xlsx2sqlite()
-

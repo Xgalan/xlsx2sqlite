@@ -4,4 +4,3 @@ from xlsx2sqlite.cli import cli
 
 def console():
     cli()
-

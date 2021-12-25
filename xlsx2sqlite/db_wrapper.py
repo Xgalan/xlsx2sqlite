@@ -6,15 +6,15 @@ from contextlib import suppress
 class Subject:
     def __init__(self):
         self._observers = []
-    
+
     def attach(self, observer):
         if observer not in self._observers:
             self._observers.append(observer)
-    
+
     def detach(self, observer):
         with suppress(ValueError):
             self._observers.remove(observer)
-    
+
     def notify(self, modifier=None):
         for observer in self._observers:
             if modifier != observer:
@@ -32,19 +32,19 @@ class DatabaseWrapper(Subject):
     """
 
     SQL_QUERY = {
-        'create_table': 'CREATE TABLE IF NOT EXISTS `{name}` ({definitions});',
-        'create_view': 'CREATE VIEW IF NOT EXISTS `{name}` AS {select};',
-        'drop_entity': 'DROP {entity} IF EXISTS `{name}`;',
-        'insert_into': 'INSERT INTO `{tablename}` ({fields}) VALUES ({args});',
-        'replace': """REPLACE INTO `{tablename}` ({fields}) VALUES ({args});""",
-        'select_from': 'SELECT {columns} FROM `{from_table}`;',
-        'table_info': 'PRAGMA table_info(`{tablename}`);',
-        }
+        "create_table": "CREATE TABLE IF NOT EXISTS `{name}` ({definitions});",
+        "create_view": "CREATE VIEW IF NOT EXISTS `{name}` AS {select};",
+        "drop_entity": "DROP {entity} IF EXISTS `{name}`;",
+        "insert_into": "INSERT INTO `{tablename}` ({fields}) VALUES ({args});",
+        "replace": """REPLACE INTO `{tablename}` ({fields}) VALUES ({args});""",
+        "select_from": "SELECT {columns} FROM `{from_table}`;",
+        "table_info": "PRAGMA table_info(`{tablename}`);",
+    }
 
     def __init__(self, path=None):
         super().__init__()
         if path is None:
-            self._db = sqlite3.connect(':memory:', detect_types=sqlite3.PARSE_DECLTYPES)
+            self._db = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES)
         else:
             self._db = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
         self._log = []
@@ -58,9 +58,9 @@ class DatabaseWrapper(Subject):
         try:
             self._db.commit()
         except:
-            print('Error while committing changes to database.')
+            print("Error while committing changes to database.")
         return True
-    
+
     @property
     def log(self):
         return self._log
@@ -77,14 +77,14 @@ class DatabaseWrapper(Subject):
     def _execute(self, query, parameters, messages):
         try:
             q = query.format(**parameters)
-            if q.endswith(';;'):
+            if q.endswith(";;"):
                 q = q[:-1]
             self._db.execute(q)
             # observer pattern
-            self.log = messages['success']
+            self.log = messages["success"]
         except sqlite3.OperationalError as e:
             self._db.rollback()
-            raise sqlite3.OperationalError(messages['error'] + str(e))
+            raise sqlite3.OperationalError(messages["error"] + str(e))
 
     def create_table(self, tablename=None, definitions=None):
         """Prepare and execute a CREATE TABLE sql query for a given table
@@ -100,10 +100,12 @@ class DatabaseWrapper(Subject):
         :key definitions: Definitions as accepted by the Sqlite3 SQL
                           query dialect.
         """
-        parameters = {'name': tablename, 'definitions': definitions}
-        messages = {'error': 'Error when creating table: ',
-                    'success': 'Created table: ' + parameters['name']}
-        self._execute(self.SQL_QUERY['create_table'], parameters, messages)
+        parameters = {"name": tablename, "definitions": definitions}
+        messages = {
+            "error": "Error when creating table: ",
+            "success": "Created table: " + parameters["name"],
+        }
+        self._execute(self.SQL_QUERY["create_table"], parameters, messages)
 
     def create_view(self, viewname=None, select=None):
         """The CREATE VIEW command assigns a name to a pre-packaged SELECT
@@ -120,10 +122,12 @@ class DatabaseWrapper(Subject):
         :key select: `SELECT` SQL query to use as argument in the
                      `CREATE VIEW IF NOT EXISTS` statement.
         """
-        parameters = {'name': viewname, 'select':  select}
-        messages = {'error': 'Error when creating view: ',
-                    'success': 'Created view: ' + parameters['name']}
-        self._execute(self.SQL_QUERY['create_view'], parameters, messages)
+        parameters = {"name": viewname, "select": select}
+        messages = {
+            "error": "Error when creating view: ",
+            "success": "Created view: " + parameters["name"],
+        }
+        self._execute(self.SQL_QUERY["create_view"], parameters, messages)
 
     def drop_entity(self, entity_name=None, entity_type=None):
         """Drop the specified entity from the database.
@@ -143,17 +147,19 @@ class DatabaseWrapper(Subject):
         :key entity_name: Name of the entity to drop.
         :key entity_type: Type of the entity to drop.
         """
-        parameters = {'entity': entity_type, 'name': entity_name}
-        messages = {'error': 'Error when deleting ' + entity_type + ' ' + entity_name,
-                    'success': 'Deleted ' + entity_type + ' ' + entity_name}
-        if entity_type in ['TABLE', 'VIEW']:
-            self._execute(self.SQL_QUERY['drop_entity'], parameters, messages)
+        parameters = {"entity": entity_type, "name": entity_name}
+        messages = {
+            "error": "Error when deleting " + entity_type + " " + entity_name,
+            "success": "Deleted " + entity_type + " " + entity_name,
+        }
+        if entity_type in ["TABLE", "VIEW"]:
+            self._execute(self.SQL_QUERY["drop_entity"], parameters, messages)
 
     def _executemany(self, query, parameters, data, messages):
         try:
             self._db.executemany(query.format(**parameters), data)
             # observer pattern
-            self.log = messages['success']
+            self.log = messages["success"]
         except sqlite3.OperationalError as e:
             self._db.rollback()
             raise sqlite3.OperationalError(str(e))
@@ -167,9 +173,9 @@ class DatabaseWrapper(Subject):
         :key data: List of values to be passed as arguments
                    to the SQL statement.
         """
-        parameters = {'tablename': tablename, 'fields': fields, 'args': args}
-        messages = {'success': 'Data inserted into table: {}'.format(tablename)}
-        self._executemany(self.SQL_QUERY['insert_into'], parameters, data, messages)
+        parameters = {"tablename": tablename, "fields": fields, "args": args}
+        messages = {"success": "Data inserted into table: {}".format(tablename)}
+        self._executemany(self.SQL_QUERY["insert_into"], parameters, data, messages)
 
     def insert_or_replace(self, tablename=None, fields=None, args=None, data=None):
         """Perform a `REPLACE` operation on the database.
@@ -180,9 +186,9 @@ class DatabaseWrapper(Subject):
         :key data: List of values to be passed as arguments
                    to the SQL statement.
         """
-        parameters = {'tablename': tablename, 'fields': fields, 'args': args}
-        messages = {'success': 'Updated table: {}'.format(tablename)}
-        self._executemany(self.SQL_QUERY['replace'], parameters, data, messages)
+        parameters = {"tablename": tablename, "fields": fields, "args": args}
+        messages = {"success": "Updated table: {}".format(tablename)}
+        self._executemany(self.SQL_QUERY["replace"], parameters, data, messages)
 
     def table_info(self, tablename=None):
         """Executes a `PRAGMA` query on the database.
@@ -197,8 +203,8 @@ class DatabaseWrapper(Subject):
         :returns: A sqlite3 cursor containing the results of the query, if any.
         :rtype: object
         """
-        conditions = {'tablename': tablename}
-        sql_query = self.SQL_QUERY['table_info']
+        conditions = {"tablename": tablename}
+        sql_query = self.SQL_QUERY["table_info"]
         self._db.row_factory = sqlite3.Row
         cur = self._db.execute(sql_query.format(**conditions))
         return cur.fetchall()
@@ -218,13 +224,13 @@ class DatabaseWrapper(Subject):
         :returns: A sqlite3 cursor containing the results of the query, if any.
         :rtype: object
         """
-        conditions = {'columns': columns, 'from_table': from_table}
-        sql_query = self.SQL_QUERY['select_from']
+        conditions = {"columns": columns, "from_table": from_table}
+        sql_query = self.SQL_QUERY["select_from"]
         if columns is None:
-            conditions['columns'] = '*'
+            conditions["columns"] = "*"
         if where:
-            conditions['where'] = where
-            sql_query = sql_query.replace(';', ' WHERE {where};')
+            conditions["where"] = where
+            sql_query = sql_query.replace(";", " WHERE {where};")
         self._db.row_factory = sqlite3.Row
         cur = self._db.execute(sql_query.format(**conditions))
         return cur.fetchall()
