@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 """Core module. Contains the main controller class.
 """
-from xlsx2sqlite.definitions_factory import Definitions
+from xlsx2sqlite.config import Xlsx2sqliteConfig
 from xlsx2sqlite.dataset import Dataset
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
-from xlsx2sqlite.config import Xlsx2sqliteConfig
+from xlsx2sqlite.definitions_factory import Definitions
 from xlsx2sqlite.import_export import export_worksheet
-
-
 
 __all__ = ["new_controller"]
 

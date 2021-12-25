@@ -6,7 +6,6 @@ import tablib
 from xlsx2sqlite.import_export import import_worksheets
 
 
-
 class Dataset:
     """Container class for tablib.Dataset instances.
     """

@@ -15,8 +15,8 @@ Public License along with xlsx2sqlite.  If not, see
 # pylint: disable=bad-whitespace
 
 import setuptools
-from xlsx2sqlite.__version__ import __version__
 
+from xlsx2sqlite.__version__ import __version__
 
 setuptools.setup(
     name="xlsx2sqlite",
@@ -44,6 +44,10 @@ setuptools.setup(
         ],
         "tests": [
             "pytest>=6,<7"
+        ],
+        "code_audit": [
+            "black",
+            "isort"
         ]
     },
     include_package_data=True,

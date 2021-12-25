@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import sqlite3
-
 from contextlib import suppress
-
 
 
 class Subject:

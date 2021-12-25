@@ -11,7 +11,6 @@ import click
 import xlsx2sqlite.controller as controller
 
 
-
 @click.group()
 @click.argument('ini', required=True, type=click.Path(exists=True))
 @click.pass_context

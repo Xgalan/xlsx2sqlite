@@ -7,8 +7,7 @@ containing table data, it uses the `openpyxl` package.
 The :func:`import_worksheets` function is useful for importing specified
 worksheets from a xlsx file, it uses the `openpyxl` package.
 """
-from openpyxl import load_workbook, Workbook
-
+from openpyxl import Workbook, load_workbook
 
 
 def export_worksheet(filename=None, ws_name=None, rows=None):

@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
-import xlsx2sqlite.field_factory as field
 import xlsx2sqlite.constraint_factory as constraint
-
+import xlsx2sqlite.field_factory as field
 
 
 class Definitions:
