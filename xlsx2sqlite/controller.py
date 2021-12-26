@@ -110,6 +110,7 @@ class Controller:
         self.set_constraints()
         [self.create_table(tablename=k) for k in self._collection]
         [self.insert_into(tablename=k) for k in self._collection]
+        self.close_db()
 
     def insert_into(self, tablename=None):
         """Insert data into the declared table.
@@ -138,11 +139,19 @@ class Controller:
 
         :param tablename: Name of the table on which to perform the REPLACE operation.
         """
+        TABLE_NOT_FOUND = "Table {} not found.".format(tablename)
+        PRIMARYKEY_NOT_FOUND = (
+            "Primary Key not found on {}, REPLACE operation aborted.".format(tablename)
+        )
+
         with self._db as db:
-            db_table = self.get_db_table_name(tablename)
-            tinfo = db.table_info(tablename=db_table)
-            if tinfo == []:
-                raise RuntimeError("Table {} not found.".format(tablename))
+            if tablename in self._ini.get_tables_names:
+                db_table = self.get_db_table_name(tablename)
+                tinfo = db.table_info(tablename=db_table)
+                if tinfo == []:
+                    return TABLE_NOT_FOUND
+            else:
+                return TABLE_NOT_FOUND
             db_pk = [dict(i) for i in tinfo if dict(i)["pk"] == True][0]["name"]
             columns = self._ini.get_columns_to_import[tablename]
             if db_pk not in columns:
@@ -160,7 +169,7 @@ class Controller:
                 else self._constraints[tablename]["primary_key"]
             )
             if pk is None:
-                print("Must declare a primary key.")
+                return PRIMARYKEY_NOT_FOUND
             table = self.get(tablename)
             # retrieve first row from new data
             first_row = dict(zip(table.headers, table[0]))
@@ -175,11 +184,7 @@ class Controller:
                     data=[v for v in table],
                 )
             else:
-                raise RuntimeError(
-                    "Primary Key not found on {}, REPLACE operation aborted.".format(
-                        tablename
-                    )
-                )
+                return PRIMARYKEY_NOT_FOUND
 
     def create_table(self, tablename=None):
         """Create a new table in the database.
@@ -210,12 +215,17 @@ class Controller:
             )
             db.create_table(tablename=d.tablename, definitions=d.prepare_sql())
 
-    def drop_tables(self, tables_list):
+    def drop_tables(self):
         """Drop all the database tables with a name in the list.
 
         :param tables_list: List of tables names to drop from the database.
         """
-        [self.drop_table(tablename=k) for k in tables_list]
+        db_tables = [
+            self.get_db_table_name(tablename)
+            for tablename in self._ini.get_tables_names
+        ]
+        [self.drop_table(tablename=k) for k in db_tables]
+        self.close_db()
 
     def drop_table(self, tablename=None):
         """Drop the database table with the corresponding name.
@@ -251,14 +261,15 @@ class Controller:
         :rtype: tablib.Dataset
         """
         parameters = {"from_table": table_name}
+        results = None
         with self._db as db:
             if where_clause:
                 parameters["where"] = where_clause
             q = db.select(**parameters)
             if q:
-                return self._dataset(*[tuple(row) for row in q], headers=q[0].keys())
-            else:
-                return None
+                results = self._dataset(*[tuple(row) for row in q], headers=q[0].keys())
+        self.close_db()
+        return results
 
     def ls_entities(self, entity_type=None):
         """List all the entities in the database.
@@ -268,15 +279,15 @@ class Controller:
         :rtype: tablib.Dataset
         """
         parameters = {"table_name": "sqlite_master"}
+        results = None
         if entity_type in ["table", "view"]:
             parameters["where_clause"] = "type='{ent_type}'".format(
                 ent_type=entity_type
             )
         q = self.select_all(**parameters)
         if q:
-            return q.subset(cols=["type", "name"])
-        else:
-            return None
+            results = q.subset(cols=["type", "name"])
+        return results
 
     def export_worksheet(self, filename=None, viewname=None, rows=None):
         """Relay function to export_worksheet"""

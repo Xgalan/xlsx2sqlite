@@ -38,7 +38,6 @@ def initialize_db(ctx):
     Populates the database with data imported from the worksheets.
     """
     ctx.obj.initialize_db()
-    ctx.obj.close_db()
     click.secho("Finished importing.", bg="green", fg="black")
 
 
@@ -49,9 +48,11 @@ def update(ctx, table_name):
     """Upsert data on a specified table."""
     if table_name:
         # Replace operation on sqlite database
-        if table_name in ctx.obj._ini.get_tables_names:
-            ctx.obj.insert_or_replace(tablename=table_name)
+        res = ctx.obj.insert_or_replace(tablename=table_name)
+        if res is None:
             click.secho("Finished importing.", bg="green", fg="black")
+        else:
+            click.secho(res, bg="red", fg="black")
     ctx.obj.close_db()
 
 
@@ -64,12 +65,7 @@ def drop_tables(ctx):
     Drop only the tables which have a name corresponding
     to the worksheets specified in the config file.
     """
-    db_tables = [
-        ctx.obj.get_db_table_name(tablename)
-        for tablename in ctx.obj._ini.get_tables_names
-    ]
-    ctx.obj.drop_tables(db_tables)
-    ctx.obj.close_db()
+    ctx.obj.drop_tables()
 
 
 @click.command()
@@ -131,7 +127,6 @@ def export_view(ctx, viewname, file_format, dest):
     }
 
     res = ctx.obj.select_all(table_name=viewname)
-    ctx.obj.close_db()
     if dest is None and file_format in export_in:
         click.echo(export_in[file_format](res))
     elif file_format in export_in:
@@ -160,7 +155,6 @@ def list_def(ctx, table_type):
         res = ctx.obj.ls_entities()
     else:
         res = ctx.obj.ls_entities(entity_type=table_type)
-    ctx.obj.close_db()
     click.echo(res) if res else click.echo("Not found any " + table_type)
 
 
