@@ -10,6 +10,9 @@ worksheets from a xlsx file, it uses the `openpyxl` package.
 from openpyxl import Workbook, load_workbook
 
 
+__all__ = ["export_worksheet", "import_worksheet", "import_worksheets"]
+
+
 def export_worksheet(filename=None, ws_name=None, rows=None):
     """Export data as a xlsx worksheet file.
 
@@ -24,6 +27,38 @@ def export_worksheet(filename=None, ws_name=None, rows=None):
     wb.save(filename)
 
 
+def import_worksheet(workbook=None, worksheet=None):
+    """Import worksheet from a workbook using openpyxl.
+
+    :key workbook: Name of the xlsx file to open read only.
+    :key worksheet: Names of the worksheet to import.
+
+    :returns: A representation of a table with data from the
+              imported worksheet.
+    """
+    # load a xlsx file.
+    wb = load_workbook(filename=workbook, read_only=True, keep_vba=False)
+    imported_worksheet = wb[worksheet]
+    _reset_dimensions(imported_worksheet)
+    # import table from imported worksheet
+    table = {
+        imported_worksheet.title: [
+            tuple([cell.value for cell in row]) for row in imported_worksheet.rows
+        ]
+    }
+    wb.close()
+    return table
+
+
+def _reset_dimensions(worksheet):
+    """Necessary as to not import a huge amount of empty cells.
+    Call appropriate methods from openpyxl to set the correct dimensions of
+    the worksheets.
+    """
+    worksheet.reset_dimensions()
+    worksheet.calculate_dimension(force=True)
+
+
 def import_worksheets(workbook=None, worksheets=None):
     """Import worksheets from a workbook using openpyxl.
 
@@ -33,23 +68,14 @@ def import_worksheets(workbook=None, worksheets=None):
     :returns: A representation of a table with data from the
               imported worksheets.
     """
-
-    def reset_dimensions(worksheets):
-        """Necessary as to not import a huge amount of empty cells.
-        Call appropriate methods from openpyxl to set the correct dimensions of
-        the worksheets.
-        """
-        [ws.reset_dimensions() for ws in worksheets]
-        [ws.calculate_dimension(force=True) for ws in worksheets]
-
     # load a xlsx file.
     wb = load_workbook(filename=workbook, read_only=True, keep_vba=False)
     if worksheets is not None:
         imported_worksheets = [wb[ws] for ws in worksheets]
-        reset_dimensions(imported_worksheets)
+        [_reset_dimensions(ws) for ws in imported_worksheets]
     else:
         imported_worksheets = [wb[ws] for ws in wb.sheetnames]
-        reset_dimensions(imported_worksheets)
+        [_reset_dimensions(ws) for ws in imported_worksheets]
     # import tables from imported worksheets
     tables = {
         ws.title: [tuple([cell.value for cell in row]) for row in ws.rows]

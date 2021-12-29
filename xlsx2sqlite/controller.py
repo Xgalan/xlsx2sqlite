@@ -95,43 +95,88 @@ class Controller:
             db_table = tablename
         return db_table
 
+    def import_table(self, tablename=None):
+        """Import the given table in the collection.
+
+        :param tablename: Name of the table to be imported.
+        :returns: A dict with data consisting in the rows imported from the xlsx file
+                  and an instance of Definition class
+        :rtype: dict
+        """
+        # check if the table has already been imported
+        if tablename not in self._collection:
+            self.create_dataset(
+                workbook=self._workbook,
+                worksheet=tablename,
+                subset_cols=self._ini.get_columns_to_import,
+                headers=self._config["headers"],
+            )
+        # retrieve constraints for the given table
+        self.set_constraints()
+        pk = (
+            None
+            if not self._constraints
+            else self._constraints[tablename]["primary_key"]
+        )
+        unique = (
+            None if not self._constraints else self._constraints[tablename]["unique"]
+        )
+        # retrieve rows
+        table = self.get(tablename)
+        # create definitions
+        d = Definitions(
+            name=self.get_db_table_name(tablename),
+            headers=table.headers,
+            row=table[0],
+            unique_keys=unique,
+            primary_key=pk,
+        )
+        return {"data": table, "definitions": d}
+
     def initialize_db(self):
         """Creates the database tables and populates them with the data
         imported from the tables in the collection.
 
         The collection contains tablib.Dataset instances.
         """
-        self.import_tables(
-            workbook=self._workbook,
-            worksheets=self._worksheets,
-            subset_cols=self._ini.get_columns_to_import,
-            headers=self._config["headers"],
-        )
-        self.set_constraints()
-        [self.create_table(tablename=k) for k in self._collection]
-        [self.insert_into(tablename=k) for k in self._collection]
+        [
+            self.create_table(tablename=n, callback=self.insert_into)
+            for n in self._worksheets
+        ]
         self.close_db()
+
+    def create_table(self, tablename=None, callback=None):
+        """Create a new table in the database.
+
+        Retrieve the constraints if they exists, then generates the
+        definitions for the SQL query, finally creates the table
+        in the database.
+        The table name must exists in the tables collection.
+
+        :key tablename: Name of the table to be created.
+        """
+        table = self.import_table(tablename)
+        with self._db as db:
+            db.create_table(
+                tablename=table["definitions"].tablename,
+                definitions=table["definitions"].prepare_sql(),
+            )
+        if callback:
+            callback(tablename=tablename)
 
     def insert_into(self, tablename=None):
         """Insert data into the declared table.
 
-        :param tablename: Name of the table to insert into.
+        :param tablename: Name of the table to import from the xlsx file.
         """
+        table = self.import_table(tablename)
         with self._db as db:
-            self.set_constraints()
-            pk = (
-                None
-                if not self._constraints
-                else self._constraints[tablename]["primary_key"]
-            )
-            table = self.get(tablename)
-            d = Definitions(headers=table.headers, row=table[0], primary_key=pk)
-            fields = d.get_fields()
+            fields = table["definitions"].get_fields()
             db.insert_into(
                 tablename=self.get_db_table_name(tablename),
-                fields=d.get_labels(),
+                fields=table["definitions"].get_labels(),
                 args=self.COMMA_DELIM.join(len(fields) * "?"),
-                data=[v for v in table],
+                data=[v for v in table["data"]],
             )
 
     def insert_or_replace(self, tablename=None):
@@ -144,6 +189,7 @@ class Controller:
             "Primary Key not found on {}, REPLACE operation aborted.".format(tablename)
         )
 
+        table = self.import_table(tablename)
         with self._db as db:
             if tablename in self._ini.get_tables_names:
                 db_table = self.get_db_table_name(tablename)
@@ -156,64 +202,22 @@ class Controller:
             columns = self._ini.get_columns_to_import[tablename]
             if db_pk not in columns:
                 columns.insert(0, db_pk)
-            self.import_tables(
-                workbook=self._workbook,
-                worksheets=self._worksheets,
-                subset_cols=columns,
-                headers=self._config["headers"],
-            )
-            self.set_constraints()
-            pk = (
-                None
-                if not self._constraints
-                else self._constraints[tablename]["primary_key"]
-            )
-            if pk is None:
+            # TODO: unit test
+            if table["definitions"].table_constraints is None:
                 return PRIMARYKEY_NOT_FOUND
-            table = self.get(tablename)
             # retrieve first row from new data
-            first_row = dict(zip(table.headers, table[0]))
-            d = Definitions(headers=table.headers, row=table[0], primary_key=pk)
-            fields = d.get_fields()
+            first_row = dict(zip(table["data"].headers, table["data"][0]))
+            fields = table["definitions"].get_fields()
             # check if the primary key is in new data
             if db_pk in first_row:
                 db.insert_or_replace(
                     tablename=db_table,
-                    fields=d.get_labels(),
+                    fields=table["definitions"].get_labels(),
                     args=self.COMMA_DELIM.join(len(fields) * "?"),
-                    data=[v for v in table],
+                    data=[v for v in table["data"]],
                 )
             else:
                 return PRIMARYKEY_NOT_FOUND
-
-    def create_table(self, tablename=None):
-        """Create a new table in the database.
-
-        Retrieve the constraints if they exists, then generates the
-        definitions for the SQL query, finally creates the table
-        in the database.
-        The table name must exists in the tables collection.
-
-        :key tablename: Name of the table to be created.
-        """
-        # retrieve constraints for the given table
-        if any(self._constraints) is False:
-            constraints = self._constraints
-        else:
-            constraints = self._constraints[tablename]
-        unique = constraints["unique"] if "unique" in constraints else None
-        pk = constraints["primary_key"] if "primary_key" in constraints else None
-        # create the database table
-        with self._db as db:
-            table = self.get(tablename)
-            d = Definitions(
-                name=self.get_db_table_name(tablename),
-                headers=table.headers,
-                row=table[0],
-                unique_keys=unique,
-                primary_key=pk,
-            )
-            db.create_table(tablename=d.tablename, definitions=d.prepare_sql())
 
     def drop_tables(self):
         """Drop all the database tables with a name in the list.

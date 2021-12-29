@@ -2,8 +2,7 @@
 """ Module for using tablib instances.
 """
 import tablib
-
-from xlsx2sqlite.import_export import import_worksheets
+import xlsx2sqlite.import_export as im_ex
 
 
 class Dataset:
@@ -23,6 +22,8 @@ class Dataset:
         return self._tables.get(table, None)
 
     def __contains__(self, key):
+        if key not in self._tables:
+            return False
         return self._tables[key]
 
     def __getitem__(self, key):
@@ -37,8 +38,32 @@ class Dataset:
         :key worksheets: List of the worksheets to be imported.
         :key subset: List of columns in the worksheet to consider for import.
         """
-        tables = import_worksheets(workbook=workbook, worksheets=worksheets)
+        tables = im_ex.import_worksheets(workbook=workbook, worksheets=worksheets)
         for tbl_name, values in tables.items():
+            if headers:
+                tablename = tbl_name.lower() + "_header"
+                if tablename in headers:
+                    row_nr = int(headers[tablename]) - 1
+                    if row_nr > 0:
+                        values = values[row_nr:]
+                    else:
+                        print("Header row must be 1 or greater.")
+            header = values.pop(0)
+            self._tables[tbl_name] = self._dataset(*values, headers=header).subset(
+                cols=subset_cols[tbl_name]
+            )
+
+    def create_dataset(
+        self, workbook=None, worksheet=None, subset_cols=None, headers=None
+    ):
+        """Import the specified worksheet into the collection.
+
+        :key workbook: Path of the xlsx file to open for import.
+        :key worksheets: Name of the worksheet to be imported.
+        :key subset: List of columns in the worksheet to consider for import.
+        """
+        table = im_ex.import_worksheet(workbook=workbook, worksheet=worksheet)
+        for tbl_name, values in table.items():
             if headers:
                 tablename = tbl_name.lower() + "_header"
                 if tablename in headers:
