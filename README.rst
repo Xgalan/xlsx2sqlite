@@ -5,6 +5,10 @@ xlsx2sqlite
     :target: https://pypi.python.org/pypi/xlsx2sqlite
     :alt: Latest PyPI version
 
+.. image:: https://img.shields.io/github/license/Xgalan/xlsx2sqlite
+    :alt: GitHub license   
+    :target: https://github.com/Xgalan/xlsx2sqlite/blob/master/LICENSE
+
 
 Generate a Sqlite3 database from a Office Open XML file.
 Read the
