@@ -15,4 +15,4 @@ def test_new_controller(ini_path):
 def test_ls_entities(ini_path):
     """unit testint ls_entities method"""
     ctrler = controller.new_controller(ini_path)
-    #TODO: difficult to test without writing a database file.
+    # TODO: difficult to test without writing a database file.

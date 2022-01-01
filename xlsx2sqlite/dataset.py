@@ -2,6 +2,7 @@
 """ Module for using tablib instances.
 """
 import tablib
+
 import xlsx2sqlite.import_export as im_ex
 
 

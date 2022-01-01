@@ -38,7 +38,7 @@ setuptools.setup(
     ],
     extras_require={
         "docs": ["Sphinx", "sphinx-click>=2.7,<3.1", "sphinx-rtd-theme==1.0.0"],
-        "tests": ["pytest>=6,<7"],
+        "tests": ["pytest>=6,<7", "coverage", "pytest-cov"],
         "code_audit": ["black", "isort"],
     },
     include_package_data=True,
