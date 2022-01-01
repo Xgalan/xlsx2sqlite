@@ -10,6 +10,10 @@ xlsx2sqlite
     :target: https://github.com/Xgalan/xlsx2sqlite/blob/master/LICENSE
 
 
+.. image:: https://codecov.io/gh/Xgalan/xlsx2sqlite/branch/compat_py3.6-3.7/graph/badge.svg?token=R22KYIQ2UO
+    :target: https://codecov.io/gh/Xgalan/xlsx2sqlite
+    
+
 Generate a Sqlite3 database from a Office Open XML file.
 Read the
 `xlsx2sqlite documentation <https://xlsx2sqlite.readthedocs.io/>`_.
