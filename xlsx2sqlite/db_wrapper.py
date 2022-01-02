@@ -54,11 +54,13 @@ class DatabaseWrapper(Subject):
 
     def __exit__(self, exc_type, exc_val, exc_traceb):
         if exc_type:
-            print(exc_val)
+            self.log = exc_val
+        if exc_traceb:
+            self.log = exc_traceb
         try:
             self._db.commit()
         except:
-            print("Error while committing changes to database.")
+            print("Error while committing changes to the database.")
         return True
 
     @property
