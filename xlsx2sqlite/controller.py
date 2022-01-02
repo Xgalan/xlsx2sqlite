@@ -133,7 +133,7 @@ class Controller:
         )
         return {"data": table, "definitions": d}
 
-    def initialize_db(self):
+    def initialize_db(self, close_db=True):
         """Creates the database tables and populates them with the data
         imported from the tables in the collection.
 
@@ -143,7 +143,10 @@ class Controller:
             self.create_table(tablename=n, callback=self.insert_into)
             for n in self._worksheets
         ]
-        self.close_db()
+        if close_db is False:
+            return
+        else:
+            self.close_db()
 
     def create_table(self, tablename=None, callback=None):
         """Create a new table in the database.
