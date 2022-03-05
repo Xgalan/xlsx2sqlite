@@ -9,7 +9,7 @@ worksheets from a xlsx file, it uses the `openpyxl` package.
 """
 from openpyxl import Workbook, load_workbook
 
-__all__ = ["export_worksheet", "import_worksheet", "import_worksheets"]
+__all__ = ["export_worksheet", "import_worksheet"]
 
 
 def export_worksheet(filename=None, ws_name=None, rows=None):
@@ -56,29 +56,3 @@ def _reset_dimensions(worksheet):
     """
     worksheet.reset_dimensions()
     worksheet.calculate_dimension(force=True)
-
-
-def import_worksheets(workbook=None, worksheets=None):
-    """Import worksheets from a workbook using openpyxl.
-
-    :key workbook: Name of the xlsx file to open read only.
-    :key worksheets: Names of the worksheets to import.
-
-    :returns: A representation of a table with data from the
-              imported worksheets.
-    """
-    # load a xlsx file.
-    wb = load_workbook(filename=workbook, read_only=True, keep_vba=False)
-    if worksheets is not None:
-        imported_worksheets = [wb[ws] for ws in worksheets]
-        [_reset_dimensions(ws) for ws in imported_worksheets]
-    else:
-        imported_worksheets = [wb[ws] for ws in wb.sheetnames]
-        [_reset_dimensions(ws) for ws in imported_worksheets]
-    # import tables from imported worksheets
-    tables = {
-        ws.title: [tuple([cell.value for cell in row]) for row in ws.rows]
-        for ws in imported_worksheets
-    }
-    wb.close()
-    return tables

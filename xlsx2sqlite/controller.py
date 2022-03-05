@@ -113,14 +113,6 @@ class Controller:
             )
         # retrieve constraints for the given table
         self.set_constraints()
-        pk = (
-            None
-            if not self._constraints
-            else self._constraints[tablename]["primary_key"]
-        )
-        unique = (
-            None if not self._constraints else self._constraints[tablename]["unique"]
-        )
         # retrieve rows
         table = self.get(tablename)
         # create definitions
@@ -128,8 +120,7 @@ class Controller:
             name=self.get_db_table_name(tablename),
             headers=table.headers,
             row=table[0],
-            unique_keys=unique,
-            primary_key=pk,
+            model=self._constraints[tablename]
         )
         return {"data": table, "definitions": d}
 

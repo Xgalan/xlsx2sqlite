@@ -11,7 +11,11 @@ class Definitions:
     COMMA_DELIM = ","
 
     def __init__(
-        self, name=None, headers=None, row=None, primary_key=None, unique_keys=None
+        self,
+        name=None,
+        headers=None,
+        row=None,
+        model=None,
     ):
         try:
             if headers is None or row is None:
@@ -19,7 +23,8 @@ class Definitions:
             self.tablename = name
             self.headers = headers
             self.row = row
-            self.unique_keys = unique_keys
+            self.unique_keys = model["unique"]
+            self.pk = model['primary_key']
             self.table_constraints = []
             # map types to column names
             self._fields = dict(
@@ -28,7 +33,7 @@ class Definitions:
                     [{"type": self.test_type(v), "cls": "Field"} for v in self.row],
                 )
             )
-            if primary_key is None:
+            if self.pk is None:
                 """If a table has a single column primary key and the declared type of that column
                 is "INTEGER" and the table is not a WITHOUT ROWID table, then the column is known
                 as an INTEGER PRIMARY KEY. The column become an alias for the rowid column.
@@ -37,10 +42,10 @@ class Definitions:
                 automatically.
                 """
                 self.primary_key = field.create_field("PrimaryKey", "id", "INTEGER")
-            elif isinstance(primary_key, list):
-                if any(set(primary_key) & set(headers)):
+            elif isinstance(self.pk, list):
+                if any(set(self.pk) & set(headers)):
                     # workaround primary key field bug in sqlite, using NOT NULL column constraint
-                    for key in primary_key:
+                    for key in self.pk:
                         if key in self._fields:
                             self._fields[key]["cls"] = "NotNullField"
                         else:
@@ -50,18 +55,18 @@ class Definitions:
                     # support for composite primary key
                     self.table_constraints.append(
                         constraint.create_table_constraint(
-                            clause="PrimaryKey", columns=primary_key
+                            clause="PrimaryKey", columns=self.pk
                         )
                     )
                 else:
                     # set a custom name for the row_id alias
                     self.primary_key = field.create_field(
-                        "PrimaryKey", primary_key[0], "INTEGER"
+                        "PrimaryKey", self.pk[0], "INTEGER"
                     )
-            if unique_keys and isinstance(unique_keys, list):
+            if self.unique_keys and isinstance(self.unique_keys, list):
                 self.table_constraints.append(
                     constraint.create_table_constraint(
-                        clause="Unique", columns=unique_keys
+                        clause="Unique", columns=self.unique_keys
                     )
                 )
         except TypeError:
