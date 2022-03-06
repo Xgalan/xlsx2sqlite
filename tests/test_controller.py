@@ -26,7 +26,12 @@ class TestController:
         self.ctrler.initialize_db(close_db=False)
         res = self.ctrler.ls_entities(entity_type="table")
         assert any(res)
-        tables = set([self.ctrler.get_db_table_name(tablename) for tablename in self.ctrler._worksheets])
+        tables = set(
+            [
+                self.ctrler.get_db_table_name(tablename)
+                for tablename in self.ctrler._worksheets
+            ]
+        )
         assert set([t[1] for t in res]) == tables
 
     def test_drop_tables(self, new_controller):

@@ -83,7 +83,7 @@ class TestDatabaseWrapper:
             args="?,?,?,?,?",
             data=fake_data2,
         )
-    
+
     def test_select(self, inmemory_db, definitions, fake_data):
         self.test_insert_into(inmemory_db, definitions, fake_data)
         s = inmemory_db.select(from_table=self.NAME)

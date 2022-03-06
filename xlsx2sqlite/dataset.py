@@ -29,30 +29,7 @@ class Dataset:
 
     def __getitem__(self, key):
         return self._tables[key]
-
-    def import_tables(
-        self, workbook=None, worksheets=None, subset_cols=None, headers=None
-    ):
-        """Import the specified worksheets into the tables collection.
-
-        :key workbook: Path of the xlsx file to open for import.
-        :key worksheets: List of the worksheets to be imported.
-        :key subset: List of columns in the worksheet to consider for import.
-        """
-        tables = im_ex.import_worksheets(workbook=workbook, worksheets=worksheets)
-        for tbl_name, values in tables.items():
-            if headers:
-                tablename = tbl_name.lower() + "_header"
-                if tablename in headers:
-                    row_nr = int(headers[tablename]) - 1
-                    if row_nr > 0:
-                        values = values[row_nr:]
-                    else:
-                        print("Header row must be 1 or greater.")
-            header = values.pop(0)
-            self._tables[tbl_name] = self._dataset(*values, headers=header).subset(
-                cols=subset_cols[tbl_name]
-            )
+    
 
     def create_dataset(
         self, workbook=None, worksheet=None, subset_cols=None, headers=None
