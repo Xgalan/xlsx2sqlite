@@ -11,7 +11,7 @@ import click
 import xlsx2sqlite.controller as controller
 
 
-@click.group()
+@click.group("cli")
 @click.argument("ini", required=True, type=click.Path(exists=True))
 @click.pass_context
 def cli(ctx, ini):
@@ -30,7 +30,7 @@ def cli(ctx, ini):
     click.secho("Parsed the config file.", bg="green", fg="black")
 
 
-@click.command()
+@cli.command()
 @click.pass_context
 def initialize_db(ctx):
     """Database creation and initialization.
@@ -41,7 +41,7 @@ def initialize_db(ctx):
     click.secho("Finished importing.", bg="green", fg="black")
 
 
-@click.command()
+@cli.command()
 @click.argument("table-name", type=click.STRING)
 @click.pass_context
 def update(ctx, table_name):
@@ -56,7 +56,7 @@ def update(ctx, table_name):
     ctx.obj.close_db()
 
 
-@click.command()
+@cli.command()
 @click.confirmation_option(prompt="Are you sure you want to drop the tables?")
 @click.pass_context
 def drop_tables(ctx):
@@ -68,7 +68,7 @@ def drop_tables(ctx):
     ctx.obj.drop_tables()
 
 
-@click.command()
+@cli.command()
 @click.pass_context
 def create_views(ctx):
     """Create database views.
@@ -84,7 +84,7 @@ def create_views(ctx):
     ctx.obj.close_db()
 
 
-@click.command()
+@cli.command()
 @click.confirmation_option(prompt="Are you sure you want to drop the views?")
 @click.pass_context
 def drop_views(ctx):
@@ -97,7 +97,7 @@ def drop_views(ctx):
     ctx.obj.close_db()
 
 
-@click.command()
+@cli.command()
 @click.argument("viewname", required=True, type=click.STRING)
 @click.option(
     "-f",
@@ -144,7 +144,7 @@ def export_view(ctx, viewname, file_format, dest):
         click.echo(res)
 
 
-@click.command()
+@cli.command()
 @click.argument(
     "table-type", required=True, type=click.Choice(["table", "view", "all"])
 )
@@ -156,12 +156,3 @@ def list_def(ctx, table_type):
     else:
         res = ctx.obj.ls_entities(entity_type=table_type)
     click.echo(res) if res else click.echo("Not found any " + table_type)
-
-
-cli.add_command(initialize_db)
-cli.add_command(update)
-cli.add_command(drop_tables)
-cli.add_command(drop_views)
-cli.add_command(create_views)
-cli.add_command(export_view)
-cli.add_command(list_def)

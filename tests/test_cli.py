@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from urllib import response
 from click.testing import CliRunner
 from xlsx2sqlite.cli import cli
 
@@ -39,6 +38,16 @@ def test_list_def(disk_db_ini):
     assert response1.exit_code == 0
 
 
+def test_create_views(disk_db_ini):
+    response = runner.invoke(cli, [str(disk_db_ini), "create-views"])
+    assert response.exit_code == 0
+
+
 def test_drop_tables(disk_db_ini):
     response = runner.invoke(cli, [str(disk_db_ini), "drop-tables", "--yes"])
+    assert response.exit_code == 0
+
+
+def test_drop_views(disk_db_ini):
+    response = runner.invoke(cli, [str(disk_db_ini), "drop-views", "--yes"])
     assert response.exit_code == 0
