@@ -44,24 +44,27 @@ class DatabaseWrapper(Subject):
     def __init__(self, path=None):
         super().__init__()
         if path is None:
-            self._db = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES)
+            self._conn = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES)
         else:
-            self._db = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
+            self._conn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
         self._log = []
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_traceb):
-        if exc_type:
-            self.log = exc_val
-        if exc_traceb:
-            self.log = exc_traceb
-        try:
-            self._db.commit()
-        except:
-            print("Error while committing changes to the database.")
-        return True
+        if exc_type is None:
+            try:
+                self._conn.commit()
+            except:
+                print("Error while committing changes to the database.")
+        else:
+            self.log = (exc_type, exc_val)
+            if exc_traceb:
+                self.log = exc_traceb
+            raise exc_type
+        # silence exceptions by returning some True value.
+        # return True
 
     @property
     def log(self):
@@ -72,20 +75,20 @@ class DatabaseWrapper(Subject):
         self._log.append(message)
         self.notify()
 
-    def close_db(self):
+    def close(self):
         """Closes the connection to the database."""
-        self._db.close()
+        self._conn.close()
 
     def _execute(self, query, parameters, messages):
         try:
             q = query.format(**parameters)
             if q.endswith(";;"):
                 q = q[:-1]
-            self._db.execute(q)
+            self._conn.execute(q)
             # observer pattern
             self.log = messages["success"]
         except sqlite3.OperationalError as e:
-            self._db.rollback()
+            self._conn.rollback()
             raise sqlite3.OperationalError(messages["error"] + str(e))
 
     def create_table(self, tablename=None, definitions=None):
@@ -159,11 +162,11 @@ class DatabaseWrapper(Subject):
 
     def _executemany(self, query, parameters, data, messages):
         try:
-            self._db.executemany(query.format(**parameters), data)
+            self._conn.executemany(query.format(**parameters), data)
             # observer pattern
             self.log = messages["success"]
         except sqlite3.OperationalError as e:
-            self._db.rollback()
+            self._conn.rollback()
             raise sqlite3.OperationalError(str(e))
 
     def insert_into(self, tablename=None, fields=None, args=None, data=None):
@@ -207,8 +210,8 @@ class DatabaseWrapper(Subject):
         """
         conditions = {"tablename": tablename}
         sql_query = self.SQL_QUERY["table_info"]
-        self._db.row_factory = sqlite3.Row
-        cur = self._db.execute(sql_query.format(**conditions))
+        self._conn.row_factory = sqlite3.Row
+        cur = self._conn.execute(sql_query.format(**conditions))
         return cur.fetchall()
 
     def select(self, columns=None, from_table=None, where=None):
@@ -233,6 +236,6 @@ class DatabaseWrapper(Subject):
         if where:
             conditions["where"] = where
             sql_query = sql_query.replace(";", " WHERE {where};")
-        self._db.row_factory = sqlite3.Row
-        cur = self._db.execute(sql_query.format(**conditions))
+        self._conn.row_factory = sqlite3.Row
+        cur = self._conn.execute(sql_query.format(**conditions))
         return cur.fetchall()

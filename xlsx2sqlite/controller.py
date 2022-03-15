@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Core module. Contains the main controller class.
 """
+from pathlib import Path
 from xlsx2sqlite.config import Xlsx2sqliteConfig
 from xlsx2sqlite.dataset import Dataset
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
@@ -31,15 +32,15 @@ class Controller:
         self._constraints = {}
         if ini_config is not None:
             self._ini = ini_config
+            self._db_file = self._ini.get("db_file")
             self._workbook = self._ini.get("xlsx_file")
             self._worksheets = self._ini.get_tables_names
             self._models = self._ini.get_models
             self._config = dict(headers=self._ini.get_options()["HEADERS"])
-            self.create_db(self._ini.get("db_file"))
+            self.create_db()
 
     def __getattr__(self, name):
         attr = getattr(self._collection, name)
-
         if not callable(attr):
             return attr
 
@@ -51,18 +52,18 @@ class Controller:
     def update(self, subject):
         print(subject.log[-1])
 
-    def create_db(self, db_file):
+    def create_db(self):
         """Creates a connection with the specified Sqlite3 database.
 
         :param db_file: Full path of the Sqlite3 database file, if no path is
                         given the DatabaseWrapper class will initialize an
                         in memory database.
         """
-        self._db = DatabaseWrapper(path=db_file)
+        self._db = DatabaseWrapper(path=self._db_file)
 
     def close_db(self):
         """Close the connection to the database."""
-        self._db.close_db()
+        self._db.close()
 
     def set_constraints(self):
         """Set a representation of the constraints declared in the INI file."""
@@ -120,26 +121,24 @@ class Controller:
             name=self.get_db_table_name(tablename),
             headers=table.headers,
             row=table[0],
-            model=self._constraints[tablename]
+            model=self._constraints[tablename],
         )
         return {"data": table, "definitions": d}
 
-    def initialize_db(self, close_db=True):
+    def initialize_db(self):
         """Creates the database tables and populates them with the data
         imported from the tables in the collection.
 
         The collection contains tablib.Dataset instances.
         """
-        [
-            self.create_table(tablename=n, callback=self.insert_into)
-            for n in self._worksheets
-        ]
-        if close_db is False:
-            return
-        else:
-            self.close_db()
+        commands = [self.create_table, self.insert_into]
+        with self._db as db:
+            [
+                [command(tablename=name) for name in self._worksheets]
+                for command in commands
+            ]
 
-    def create_table(self, tablename=None, callback=None):
+    def create_table(self, tablename=None):
         """Create a new table in the database.
 
         Retrieve the constraints if they exists, then generates the
@@ -150,13 +149,10 @@ class Controller:
         :key tablename: Name of the table to be created.
         """
         table = self.import_table(tablename)
-        with self._db as db:
-            db.create_table(
-                tablename=table["definitions"].tablename,
-                definitions=table["definitions"].prepare_sql(),
-            )
-        if callback:
-            callback(tablename=tablename)
+        self._db.create_table(
+            tablename=table["definitions"].tablename,
+            definitions=table["definitions"].prepare_sql(),
+        )
 
     def insert_into(self, tablename=None):
         """Insert data into the declared table.
@@ -164,14 +160,13 @@ class Controller:
         :param tablename: Name of the table to import from the xlsx file.
         """
         table = self.import_table(tablename)
-        with self._db as db:
-            fields = table["definitions"].get_fields()
-            db.insert_into(
-                tablename=self.get_db_table_name(tablename),
-                fields=table["definitions"].get_labels(),
-                args=self.COMMA_DELIM.join(len(fields) * "?"),
-                data=[v for v in table["data"]],
-            )
+        fields = table["definitions"].get_fields()
+        self._db.insert_into(
+            tablename=self.get_db_table_name(tablename),
+            fields=table["definitions"].get_labels(),
+            args=self.COMMA_DELIM.join(len(fields) * "?"),
+            data=[v for v in table["data"]],
+        )
 
     def insert_or_replace(self, tablename=None):
         """Perform a REPLACE operation on the database.
@@ -196,7 +191,6 @@ class Controller:
             columns = self._ini.get_columns_to_import[tablename]
             if db_pk not in columns:
                 columns.insert(0, db_pk)
-            # TODO: unit test
             if table["definitions"].table_constraints is None:
                 return PRIMARYKEY_NOT_FOUND
             # retrieve first row from new data
@@ -222,8 +216,8 @@ class Controller:
             self.get_db_table_name(tablename)
             for tablename in self._ini.get_tables_names
         ]
-        [self.drop_table(tablename=k) for k in db_tables]
-        self.close_db()
+        with self._db as db:
+            [db.drop_entity(entity_name=t, entity_type="TABLE") for t in db_tables]
 
     def drop_table(self, tablename=None):
         """Drop the database table with the corresponding name.
@@ -242,6 +236,15 @@ class Controller:
         with self._db as db:
             db.create_view(viewname=viewname, select=select)
 
+    def create_views(self):
+        p = Path(self._ini.get("sql_views"))
+        if p:
+            with self._db as db:
+                [
+                    db.create_view(viewname=f.stem, select=f.read_text())
+                    for f in list(p.glob("**/*.sql"))
+                ]
+
     def drop_view(self, viewname=None):
         """Drop the database view with the corresponding name.
 
@@ -249,6 +252,14 @@ class Controller:
         """
         with self._db as db:
             db.drop_entity(entity_name=viewname, entity_type="VIEW")
+
+    def drop_views(self):
+        """Drop all the views from the database."""
+        p = Path(self._ini.get("sql_views"))
+        if p:
+            with self._db as db:
+                viewnames = [f.stem for f in list(p.glob("**/*.sql"))]
+                [db.drop_entity(entity_name=v, entity_type="VIEW") for v in viewnames]
 
     def select_all(self, table_name=None, where_clause=None):
         """Perform a `SELECT *` SQL query on the database.
@@ -266,7 +277,6 @@ class Controller:
             q = db.select(**parameters)
             if q:
                 results = self._dataset(*[tuple(row) for row in q], headers=q[0].keys())
-        self.close_db()
         return results
 
     def ls_entities(self, entity_type=None):

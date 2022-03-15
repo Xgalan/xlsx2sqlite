@@ -42,15 +42,19 @@ class Definitions:
                 primary key column, the system chooses an integer value to use as the rowid
                 automatically.
                 """
-                self.primary_key = field.create_field("PrimaryKey", "id", "INTEGER")
+                self.primary_key = field.Field(
+                    field_name="id", field_type="INTEGER", definition="PrimaryKey"
+                )
             elif isinstance(self.pk, list):
                 if any(set(self.pk) & set(headers)):
                     for key in self.pk:
                         if key in set(self._fields):
                             pass
                         else:
-                            self.primary_key = field.create_field(
-                                "NotNullField", key, "INTEGER"
+                            self.primary_key = field.Field(
+                                field_name=key,
+                                field_type="INTEGER",
+                                definition="NotNull",
                             )
                     # support for composite primary key
                     self.table_constraints.append(
@@ -60,8 +64,10 @@ class Definitions:
                     )
                 else:
                     # set a custom name for the row_id alias
-                    self.primary_key = field.create_field(
-                        "PrimaryKey", self.pk[0], "INTEGER"
+                    self.primary_key = field.Field(
+                        field_name=self.pk[0],
+                        field_type="INTEGER",
+                        definition="PrimaryKey",
                     )
             if self.unique_keys and isinstance(self.unique_keys, list):
                 self.table_constraints.append(
@@ -105,17 +111,19 @@ class Definitions:
         def column_constraint(key):
             if pk is not None and key in pk:
                 # workaround primary key field bug in sqlite, using NOT NULL column constraint
-                return "NotNullField"
+                return "NotNull"
             else:
                 if not_null is not None and key in not_null:
-                    return "NotNullField"
+                    return "NotNull"
                 else:
                     return "Field"
 
         pk = None if self.pk is None else set(self.pk)
         not_null = None if self.not_null is None else set(self.not_null)
         fields = [
-            field.create_field(column_constraint(k), k, v["type"])
+            field.Field(
+                field_name=k, field_type=v["type"], definition=column_constraint(k)
+            )
             for k, v in self._fields.items()
         ]
         return fields

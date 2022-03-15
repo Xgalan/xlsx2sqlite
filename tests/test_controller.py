@@ -21,11 +21,10 @@ class TestController:
         assert self.ctrler.get_db_table_name("SalesOrders") == "Sales Orders"
 
     def test_initialize_db(self, new_controller):
-        """unit testint initialize_db method"""
+        """unit testing initialize_db method"""
         self.test_new_controller(new_controller)
-        self.ctrler.initialize_db(close_db=False)
+        self.ctrler.initialize_db()
         res = self.ctrler.ls_entities(entity_type="table")
-        assert any(res)
         tables = set(
             [
                 self.ctrler.get_db_table_name(tablename)
@@ -33,9 +32,11 @@ class TestController:
             ]
         )
         assert set([t[1] for t in res]) == tables
+        self.ctrler.close_db()
 
     def test_drop_tables(self, new_controller):
-        self.test_initialize_db(new_controller)
+        self.test_new_controller(new_controller)
+        self.ctrler.initialize_db()
         self.ctrler.drop_tables()
         res = self.ctrler.ls_entities(entity_type="table")
         assert res is None

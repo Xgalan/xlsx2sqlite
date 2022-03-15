@@ -4,8 +4,6 @@
 Parse the INI file passed as argument for retrieving the options, then
 executes the choosen command.
 """
-from pathlib import Path
-
 import click
 
 import xlsx2sqlite.controller as controller
@@ -38,6 +36,7 @@ def initialize_db(ctx):
     Populates the database with data imported from the worksheets.
     """
     ctx.obj.initialize_db()
+    ctx.obj.close_db()
     click.secho("Finished importing.", bg="green", fg="black")
 
 
@@ -49,11 +48,11 @@ def update(ctx, table_name):
     if table_name:
         # Replace operation on sqlite database
         res = ctx.obj.insert_or_replace(tablename=table_name)
+        ctx.obj.close_db()
         if res is None:
             click.secho("Finished importing.", bg="green", fg="black")
         else:
             click.secho(res, bg="red", fg="black")
-    ctx.obj.close_db()
 
 
 @cli.command()
@@ -66,6 +65,7 @@ def drop_tables(ctx):
     to the worksheets specified in the config file.
     """
     ctx.obj.drop_tables()
+    ctx.obj.close_db()
 
 
 @cli.command()
@@ -76,11 +76,7 @@ def create_views(ctx):
     Create views on the database loading `*.sql` from the path specified in
     the INI config file. A file must contain a valid `SELECT` query.
     """
-    p = Path(ctx.obj._ini.get("sql_views"))
-    [
-        ctx.obj.create_view(viewname=f.stem, select=f.read_text())
-        for f in list(p.glob("**/*.sql"))
-    ]
+    ctx.obj.create_views()
     ctx.obj.close_db()
 
 
@@ -90,10 +86,9 @@ def create_views(ctx):
 def drop_views(ctx):
     """Drop the views in the database.
 
-    Drop all the views of the database.
+    Drop all the views from the database.
     """
-    p = Path(ctx.obj._ini.get("sql_views"))
-    [ctx.obj.drop_view(viewname=f.stem) for f in list(p.glob("**/*.sql"))]
+    ctx.obj.drop_views()
     ctx.obj.close_db()
 
 
@@ -127,6 +122,7 @@ def export_view(ctx, viewname, file_format, dest):
     }
 
     res = ctx.obj.select_all(table_name=viewname)
+    ctx.obj.close_db()
     if dest is None and file_format in export_in:
         click.echo(export_in[file_format](res))
     elif file_format in export_in:
@@ -155,4 +151,5 @@ def list_def(ctx, table_type):
         res = ctx.obj.ls_entities()
     else:
         res = ctx.obj.ls_entities(entity_type=table_type)
+    ctx.obj.close_db()
     click.echo(res) if res else click.echo("Not found any " + table_type)
