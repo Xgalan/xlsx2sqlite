@@ -29,7 +29,6 @@ class Dataset:
 
     def __getitem__(self, key):
         return self._tables[key]
-    
 
     def create_dataset(
         self, workbook=None, worksheet=None, subset_cols=None, headers=None
@@ -54,22 +53,3 @@ class Dataset:
             self._tables[tbl_name] = self._dataset(*values, headers=header).subset(
                 cols=subset_cols[tbl_name]
             )
-
-    def create_empty_table(self, tablename=None, headers=None):
-        """Creates a tablib.Dataset instance in the collection.
-
-        :key tablename: Name of the table to be created.
-        :key headers: List of labels for the table header.
-        :returns: An empty table.
-        :rtype: tablib.Dataset
-        """
-        self._tables[tablename] = self._dataset(headers=headers)
-        return self._tables[tablename]
-
-    def values_to_table(self, tablename=None, values=None):
-        """Append values to a tablib.Dataset table in the collection.
-
-        :key tablename: Name of the table.
-        :key values: List of values to append.
-        """
-        [self._tables[tablename].append(val) for val in values]

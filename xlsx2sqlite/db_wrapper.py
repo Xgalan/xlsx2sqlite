@@ -58,13 +58,15 @@ class DatabaseWrapper(Subject):
                 self._conn.commit()
             except:
                 print("Error while committing changes to the database.")
+        elif exc_type is sqlite3.IntegrityError:
+            self.log = exc_val
+            # silence exceptions by returning some True value.
+            return True
         else:
             self.log = (exc_type, exc_val)
             if exc_traceb:
                 self.log = exc_traceb
             raise exc_type
-        # silence exceptions by returning some True value.
-        # return True
 
     @property
     def log(self):

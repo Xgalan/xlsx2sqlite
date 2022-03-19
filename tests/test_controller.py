@@ -13,7 +13,6 @@ class TestController:
     def test_new_controller(self, new_controller):
         """support for in-memory database"""
         self.ctrler = new_controller
-        self.ctrler._db.attach(self.ctrler)
         assert self.ctrler is not None
         assert self.ctrler._config is not None
         assert self.ctrler._ini.get("db_file") is None

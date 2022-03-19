@@ -16,8 +16,7 @@ def test_initialize_inmemory_db(ini_path):
 
 
 def test_initialize_no_pk(no_pk_ini):
-    runner1 = CliRunner()
-    resp = runner1.invoke(cli, [str(no_pk_ini), "initialize-db"])
+    resp = runner.invoke(cli, [str(no_pk_ini), "initialize-db"])
     assert resp.exit_code == 0
 
 

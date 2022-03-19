@@ -18,8 +18,6 @@ def cli(ctx, ini):
     """
     try:
         ctx.obj = controller.new_controller(ini)
-        # observer pattern
-        ctx.obj._db.attach(ctx.obj)
     except KeyError as err:
         click.secho(str(err), bg="red", fg="black")
         raise click.Abort
