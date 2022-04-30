@@ -81,6 +81,10 @@ class DatabaseWrapper(Subject):
         """Closes the connection to the database."""
         self._conn.close()
 
+    def iterdump(self):
+        """Returns the iterdump method."""
+        return self._conn.iterdump()
+
     def _execute(self, query, parameters, messages):
         try:
             q = query.format(**parameters)

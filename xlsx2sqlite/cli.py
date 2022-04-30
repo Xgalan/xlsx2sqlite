@@ -151,3 +151,24 @@ def list_def(ctx, table_type):
         res = ctx.obj.ls_entities(entity_type=table_type)
     ctx.obj.close_db()
     click.echo(res) if res else click.echo("Not found any " + table_type)
+
+
+@cli.command()
+@click.option(
+    "-o",
+    "dest",
+    type=click.File("w"),
+    help="Output file for dumped database in SQL format.",
+)
+@click.pass_context
+def dump(ctx, dest):
+    """Dump the entire database in SQL format. If a valid path is given write content to file."""
+    res = ctx.obj.dump_database()
+    ctx.obj.close_db()
+    if dest is None:
+        click.echo(res.getvalue())
+    else:
+        dest.write(res.getvalue())
+        dest.close()
+        click.echo("Dumped database in " + dest.name)
+    res.close()

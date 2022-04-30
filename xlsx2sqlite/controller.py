@@ -2,6 +2,7 @@
 """Core module. Contains the main controller class.
 """
 from pathlib import Path
+from unittest import result
 from xlsx2sqlite.config import Xlsx2sqliteConfig
 from xlsx2sqlite.dataset import Dataset
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
@@ -31,6 +32,7 @@ class Controller:
         self._db = database or DatabaseWrapper
         self._config = {}
         self._constraints = {}
+        self._commands_stack = []
         if conf is not None:
             self.setup(conf=conf)
         else:
@@ -70,6 +72,11 @@ class Controller:
     def close_db(self):
         """Close the connection to the database."""
         self._conn.close()
+
+    def execute(self):
+        with self._conn as db:
+            self._commands_stack.clear()
+            return
 
     def get_db_table_name(self, tablename):
         """Return the name to give to the database table.
@@ -123,11 +130,11 @@ class Controller:
 
         The collection contains tablib.Dataset instances.
         """
-        commands = [self.create_table, self.insert_into]
+        self._commands_stack.extend([self.create_table, self.insert_into])
         with self._conn as db:
             [
                 [command(tablename=name) for name in self._worksheets]
-                for command in commands
+                for command in self._commands_stack
             ]
 
     def create_table(self, tablename=None):
@@ -286,6 +293,15 @@ class Controller:
         q = self.select_all(**parameters)
         if q:
             results = q.subset(cols=["type", "name"])
+        return results
+
+    def dump_database(self):
+        """Dump database in SQL format."""
+        from io import StringIO
+
+        results = StringIO()
+        with self._conn as db:
+            [results.write(f"{line}\n") for line in db.iterdump()]
         return results
 
     def export_worksheet(self, filename=None, viewname=None, rows=None):
