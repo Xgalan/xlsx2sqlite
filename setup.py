@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 __license__ = """
 This file is part of xlsx2sqlite.
 xlsx2sqlite is free software: you can redistribute it and/or modify

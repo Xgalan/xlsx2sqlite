@@ -2,7 +2,7 @@
 """Core module. Contains the main controller class.
 """
 from pathlib import Path
-from unittest import result
+from io import StringIO
 from xlsx2sqlite.config import Xlsx2sqliteConfig
 from xlsx2sqlite.dataset import Dataset
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
@@ -297,8 +297,6 @@ class Controller:
 
     def dump_database(self):
         """Dump database in SQL format."""
-        from io import StringIO
-
         results = StringIO()
         with self._conn as db:
             [results.write(f"{line}\n") for line in db.iterdump()]

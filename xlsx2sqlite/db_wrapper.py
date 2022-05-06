@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sqlite3
+import sqlite3.dump
 from contextlib import suppress
 
 
@@ -44,7 +45,9 @@ class DatabaseWrapper(Subject):
     def __init__(self, path=None):
         super().__init__()
         if path is None:
-            self._conn = sqlite3.connect(":memory:", detect_types=sqlite3.PARSE_DECLTYPES)
+            self._conn = sqlite3.connect(
+                ":memory:", detect_types=sqlite3.PARSE_DECLTYPES
+            )
         else:
             self._conn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
         self._log = []
