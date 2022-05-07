@@ -26,14 +26,15 @@ RUN apt-get update -y \
         upx \
     && rm -rf /var/cache/apt/archives \
     && rm -rf /var/lib/apt/lists/* \
-	&& localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+	&& localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 
+
+ENV LANG en_US.utf8
 
 WORKDIR /usr/src/app
 
 COPY --from=base /usr/src/app/venv ./venv
 COPY --from=base /usr/src/app/xlsx2sqlite ./xlsx2sqlite
 
-ENV LANG en_US.utf8
 ENV PATH="/usr/src/app/venv/bin:$PATH"
 ENV PYTHONPATH="/usr/src/app/xlsx2sqlite:$PYTHONPATH"
 
@@ -59,6 +60,14 @@ RUN python -m nuitka \
 
 FROM python:3.7.13-slim-bullseye
 
-COPY --from=build /usr/src/app/xlsx2sqlite.dist/ /opt
+ARG USER_ID
+ARG GROUP_ID
 
-ENTRYPOINT [ "/opt/xlsx2sqlite" ]
+RUN getent group ${GROUP_ID} || addgroup --gid $GROUP_ID app \
+    && adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID app
+
+COPY --chown=${USER_ID}:${GROUP_ID} --from=build /usr/src/app/xlsx2sqlite.dist/ /opt/xlsx2sqlite
+
+USER app
+
+ENTRYPOINT [ "/opt/xlsx2sqlite/xlsx2sqlite" ]
