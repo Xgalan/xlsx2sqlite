@@ -5,6 +5,14 @@ xlsx2sqlite
     :target: https://pypi.python.org/pypi/xlsx2sqlite
     :alt: Latest PyPI version
 
+.. image:: https://img.shields.io/github/license/Xgalan/xlsx2sqlite
+    :alt: GitHub license   
+    :target: https://github.com/Xgalan/xlsx2sqlite/blob/master/LICENSE
+
+
+.. image:: https://codecov.io/gh/Xgalan/xlsx2sqlite/branch/compat_py3.6-3.7/graph/badge.svg?token=R22KYIQ2UO
+    :target: https://codecov.io/gh/Xgalan/xlsx2sqlite
+    
 
 Generate a Sqlite3 database from a Office Open XML file.
 Read the
@@ -23,7 +31,6 @@ The INI file must contains this section:
 
 Optional sections, see below:
 
-- HEADERS
 - EXCLUDE
 
 Example of a configuration:
@@ -53,17 +60,8 @@ Example of a configuration:
         primary_key = id
         unique = Col2
         not_null = Col2
-
-
-Optional headers section, add if the row with the header is not the first row of the worksheet:
-
-.. code-block:: ini
-
-    [HEADERS]
-        ; define as name of the worksheet + _header
-        SheetName2_header = 2
-        ; TODO: to be changed with a list of single word equal to number of the row, i.e.:
-        SheetName2 = 2
+        ; add if the row with the header is not the first row of the worksheet
+        header = 2
 
 Optional "exclude" section, use if you don't want to import some section of the ini file, 
 this is useful in example for co-exist with some other configuration file.

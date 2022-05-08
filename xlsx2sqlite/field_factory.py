@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
-__all__ = ["create_field"]
 
 
-COMMA_DELIM = ","
-SPACE_DELIM = " "
-
-
-def create_field(type_of: str, field_name: str, field_type: str) -> object:
-    """Field factory
+class Field:
+    """Represents a database field.
 
     :param type_of: The type to assign to the database table column, choose between:
 
@@ -21,29 +16,32 @@ def create_field(type_of: str, field_name: str, field_type: str) -> object:
     :type field_name: str
     :param field_type: Column type as a string defined in sqlite column types.
     :type field_type: str
+    :param definition: Type of column-level constraint to declare.
+    :type definition: str
     :returns: An instance of a Field object with a to_sql() method that returns an
               appropriate SQL string.
     :rtype: object
     """
 
-    fields = {
-        "Field": Field,
-        "Unique": UniqueField,
-        "PrimaryKey": PrimaryKey,
-        "NotNullField": NotNullField,
+    SPACE_DELIM = " "
+
+    """This dictionary represents the column-level constraints as SQL strings."""
+    DEFINITIONS = {
+        "Field": None,
+        "Unique": "UNIQUE",
+        "PrimaryKey": "NOT NULL PRIMARY KEY",
+        "NotNull": "NOT NULL",
+        None: None,
     }
-    return fields[type_of](field_name, field_type)
 
-
-class Field:
-    """Represents a database field."""
-
-    def __init__(self, field_name=None, field_type=None):
+    def __init__(self, field_name=None, field_type=None, definition=None):
+        # Can say: if definition is a list then declare all items as column-level constraints !
         self.field_name = field_name
         self.field_type = field_type
+        self.definition = definition
 
     def __repr__(self):
-        return f"<Field {self.field_name}, type={self.field_type}>"
+        return f"<Field {self.field_name}, type={self.field_type}, definition={self.DEFINITIONS[self.definition]}>"
 
     def label(self):
         """A form of the string with the leading and trailing characters removed.
@@ -62,47 +60,8 @@ class Field:
                   and trailing characters removed.
         :rtype: str
         """
-        return SPACE_DELIM.join((self.label(), self.field_type))
-
-
-class AddDefinitionMixin:
-    """Render the definition field added in the subclass.
-
-    Main class must contain a label method that returns a string.
-    """
-
-    def __repr__(self):
-        return f"<Field {self.field_name}, type={self.field_type} definition={self.definition}>"
-
-    def to_sql(self):
-        """Return a suitable string for using in the database.
-
-        :returns: A capitalized form of the string with the leading
-                  and trailing characters removed.
-        :rtype: str
-        """
-        return SPACE_DELIM.join((self.label(), self.field_type, self.definition))
-
-
-class PrimaryKey(AddDefinitionMixin, Field):
-    """Represents the primary key for a database table."""
-
-    def __init__(self, field_name, field_type):
-        super().__init__(field_name, field_type)
-        self.definition = "NOT NULL PRIMARY KEY"
-
-
-class UniqueField(AddDefinitionMixin, Field):
-    """Represents a field with a UNIQUE clause."""
-
-    def __init__(self, field_name, field_type):
-        super().__init__(field_name, field_type)
-        self.definition = "UNIQUE"
-
-
-class NotNullField(AddDefinitionMixin, Field):
-    """A field with the NOT NULL clause."""
-
-    def __init__(self, field_name, field_type):
-        super().__init__(field_name, field_type)
-        self.definition = "NOT NULL"
+        params = [self.label(), self.field_type]
+        d = self.DEFINITIONS[self.definition]
+        if d is not None:
+            params.append(d)
+        return self.SPACE_DELIM.join(params)

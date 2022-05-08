@@ -3,4 +3,4 @@ from xlsx2sqlite.cli import cli
 
 
 def console():
-    cli()
+    cli(prog_name="xlsx2sqlite")

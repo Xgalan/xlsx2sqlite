@@ -2,10 +2,6 @@
 __all__ = ["create_table_constraint"]
 
 
-COMMA_DELIM = ","
-SPACE_DELIM = " "
-
-
 def create_table_constraint(clause: str, columns: list) -> object:
     """Table-level constraint class factory, valid clauses are:
 
@@ -21,6 +17,8 @@ def create_table_constraint(clause: str, columns: list) -> object:
 
 class TableConstraint:
     """Class for defining a table-level constraint on the table, permit to support a composite primary key."""
+
+    COMMA_DELIM = ","
 
     def __init__(self, keyword, columns):
         self._keyword = keyword
@@ -41,7 +39,7 @@ class TableConstraint:
         backtick = "`"
         return "{keyword}({columns})".format(
             keyword=self._keyword,
-            columns=COMMA_DELIM.join(
+            columns=self.COMMA_DELIM.join(
                 [f"{backtick}{col}{backtick}" for col in self._columns]
             ),
         )

@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
-from pathlib import Path
-
 import pytest
 
 from xlsx2sqlite.config import Xlsx2sqliteConfig
-
-
-@pytest.fixture
-def ini_path():
-    return Path("./tests/parsing_test.ini", exists=True).resolve()
 
 
 @pytest.fixture

@@ -42,9 +42,8 @@ and a section for every worksheet you wish to import, i.e.:
 
 [SheetName2]
 
-Optional section for defining if the row containing the header of the table is not the first:
 
-- HEADERS
+- EXCLUDE
 
 Example of a configuration:
 
@@ -66,17 +65,17 @@ Example of a configuration:
     primary_key = id         ; declare the name of the primary key
     unique = Col1            ; declare the columns which will be created with a UNIQUE clause
     not_null = Col1          ; declare the columns which will be created with a NOT NULL clause
+    header = 1               ; declare if the row containing the header of the table is not the first
 
 
-Optional headers section, add if the row with the header is not the first row of the worksheet:
+
+Optional "exclude" section, use if you don't want to import some section of the ini file, 
+this is useful in example for co-exist with some other configuration file.
 
 .. code-block:: ini
 
-    [HEADERS]
-        ; define as name of the worksheet + _header
-        SheetName2_header = 2
-        ; TODO: to be changed with a list of single word equal to number of the row, i.e.:
-        SheetName2 = 2
+    [EXCLUDE]
+        sections = SECTION1,section2,etc. ; use a list of comma-separated values.
 
 
 API Reference

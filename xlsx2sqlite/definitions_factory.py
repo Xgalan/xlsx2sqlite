@@ -11,7 +11,11 @@ class Definitions:
     COMMA_DELIM = ","
 
     def __init__(
-        self, name=None, headers=None, row=None, primary_key=None, unique_keys=None
+        self,
+        name=None,
+        headers=None,
+        row=None,
+        model=None,
     ):
         try:
             if headers is None or row is None:
@@ -19,16 +23,18 @@ class Definitions:
             self.tablename = name
             self.headers = headers
             self.row = row
-            self.unique_keys = unique_keys
+            self.unique_keys = model["unique"]
+            self.pk = model["primary_key"]
+            self.not_null = model["not_null"]
             self.table_constraints = []
             # map types to column names
             self._fields = dict(
                 zip(
                     self.headers,
-                    [{"type": self.test_type(v), "cls": "Field"} for v in self.row],
+                    [{"type": self.test_type(v)} for v in self.row],
                 )
             )
-            if primary_key is None:
+            if self.pk is None:
                 """If a table has a single column primary key and the declared type of that column
                 is "INTEGER" and the table is not a WITHOUT ROWID table, then the column is known
                 as an INTEGER PRIMARY KEY. The column become an alias for the rowid column.
@@ -36,32 +42,37 @@ class Definitions:
                 primary key column, the system chooses an integer value to use as the rowid
                 automatically.
                 """
-                self.primary_key = field.create_field("PrimaryKey", "id", "INTEGER")
-            elif isinstance(primary_key, list):
-                if any(set(primary_key) & set(headers)):
-                    # workaround primary key field bug in sqlite, using NOT NULL column constraint
-                    for key in primary_key:
-                        if key in self._fields:
-                            self._fields[key]["cls"] = "NotNullField"
+                self.primary_key = field.Field(
+                    field_name="id", field_type="INTEGER", definition="PrimaryKey"
+                )
+            elif isinstance(self.pk, list):
+                if any(set(self.pk) & set(headers)):
+                    for key in self.pk:
+                        if key in set(self._fields):
+                            pass
                         else:
-                            self.primary_key = field.create_field(
-                                "NotNullField", key, "INTEGER"
+                            self.primary_key = field.Field(
+                                field_name=key,
+                                field_type="INTEGER",
+                                definition="NotNull",
                             )
                     # support for composite primary key
                     self.table_constraints.append(
                         constraint.create_table_constraint(
-                            clause="PrimaryKey", columns=primary_key
+                            clause="PrimaryKey", columns=self.pk
                         )
                     )
                 else:
                     # set a custom name for the row_id alias
-                    self.primary_key = field.create_field(
-                        "PrimaryKey", primary_key[0], "INTEGER"
+                    self.primary_key = field.Field(
+                        field_name=self.pk[0],
+                        field_type="INTEGER",
+                        definition="PrimaryKey",
                     )
-            if unique_keys and isinstance(unique_keys, list):
+            if self.unique_keys and isinstance(self.unique_keys, list):
                 self.table_constraints.append(
                     constraint.create_table_constraint(
-                        clause="Unique", columns=unique_keys
+                        clause="Unique", columns=self.unique_keys
                     )
                 )
         except TypeError:
@@ -96,8 +107,24 @@ class Definitions:
         :returns: A list of Field instances describing the columns of the database.
         :rtype: list
         """
+
+        def column_constraint(key):
+            if pk is not None and key in pk:
+                # workaround primary key field bug in sqlite, using NOT NULL column constraint
+                return "NotNull"
+            else:
+                if not_null is not None and key in not_null:
+                    return "NotNull"
+                else:
+                    return "Field"
+
+        pk = None if self.pk is None else set(self.pk)
+        not_null = None if self.not_null is None else set(self.not_null)
         fields = [
-            field.create_field(v["cls"], k, v["type"]) for k, v in self._fields.items()
+            field.Field(
+                field_name=k, field_type=v["type"], definition=column_constraint(k)
+            )
+            for k, v in self._fields.items()
         ]
         return fields
 

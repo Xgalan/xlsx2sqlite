@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 __license__ = """
 This file is part of xlsx2sqlite.
 xlsx2sqlite is free software: you can redistribute it and/or modify
@@ -34,11 +35,11 @@ setuptools.setup(
         "tablib>=3.0.0,<=3.1.0",
         "Click>=7.1,<8.1",
         "colorama",
-        "cached-property;python_version<='3.7.0'",
+        "cached-property;python_version<'3.8'",
     ],
     extras_require={
         "docs": ["Sphinx", "sphinx-click>=2.7,<3.1", "sphinx-rtd-theme==1.0.0"],
-        "tests": ["pytest>=6,<7"],
+        "tests": ["pytest>=6,<7", "coverage", "pytest-cov", "pytest-random-order"],
         "code_audit": ["black", "isort"],
     },
     include_package_data=True,

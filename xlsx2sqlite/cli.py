@@ -4,14 +4,12 @@
 Parse the INI file passed as argument for retrieving the options, then
 executes the choosen command.
 """
-from pathlib import Path
-
 import click
 
 import xlsx2sqlite.controller as controller
 
 
-@click.group()
+@click.group("cli")
 @click.argument("ini", required=True, type=click.Path(exists=True))
 @click.pass_context
 def cli(ctx, ini):
@@ -20,8 +18,6 @@ def cli(ctx, ini):
     """
     try:
         ctx.obj = controller.new_controller(ini)
-        # observer pattern
-        ctx.obj._db.attach(ctx.obj)
     except KeyError as err:
         click.secho(str(err), bg="red", fg="black")
         raise click.Abort
@@ -30,7 +26,7 @@ def cli(ctx, ini):
     click.secho("Parsed the config file.", bg="green", fg="black")
 
 
-@click.command()
+@cli.command()
 @click.pass_context
 def initialize_db(ctx):
     """Database creation and initialization.
@@ -38,10 +34,11 @@ def initialize_db(ctx):
     Populates the database with data imported from the worksheets.
     """
     ctx.obj.initialize_db()
+    ctx.obj.close_db()
     click.secho("Finished importing.", bg="green", fg="black")
 
 
-@click.command()
+@cli.command()
 @click.argument("table-name", type=click.STRING)
 @click.pass_context
 def update(ctx, table_name):
@@ -49,14 +46,14 @@ def update(ctx, table_name):
     if table_name:
         # Replace operation on sqlite database
         res = ctx.obj.insert_or_replace(tablename=table_name)
+        ctx.obj.close_db()
         if res is None:
             click.secho("Finished importing.", bg="green", fg="black")
         else:
             click.secho(res, bg="red", fg="black")
-    ctx.obj.close_db()
 
 
-@click.command()
+@cli.command()
 @click.confirmation_option(prompt="Are you sure you want to drop the tables?")
 @click.pass_context
 def drop_tables(ctx):
@@ -66,9 +63,10 @@ def drop_tables(ctx):
     to the worksheets specified in the config file.
     """
     ctx.obj.drop_tables()
+    ctx.obj.close_db()
 
 
-@click.command()
+@cli.command()
 @click.pass_context
 def create_views(ctx):
     """Create database views.
@@ -76,28 +74,23 @@ def create_views(ctx):
     Create views on the database loading `*.sql` from the path specified in
     the INI config file. A file must contain a valid `SELECT` query.
     """
-    p = Path(ctx.obj._ini.get("sql_views"))
-    [
-        ctx.obj.create_view(viewname=f.stem, select=f.read_text())
-        for f in list(p.glob("**/*.sql"))
-    ]
+    ctx.obj.create_views()
     ctx.obj.close_db()
 
 
-@click.command()
+@cli.command()
 @click.confirmation_option(prompt="Are you sure you want to drop the views?")
 @click.pass_context
 def drop_views(ctx):
     """Drop the views in the database.
 
-    Drop all the views of the database.
+    Drop all the views from the database.
     """
-    p = Path(ctx.obj._ini.get("sql_views"))
-    [ctx.obj.drop_view(viewname=f.stem) for f in list(p.glob("**/*.sql"))]
+    ctx.obj.drop_views()
     ctx.obj.close_db()
 
 
-@click.command()
+@cli.command()
 @click.argument("viewname", required=True, type=click.STRING)
 @click.option(
     "-f",
@@ -127,6 +120,7 @@ def export_view(ctx, viewname, file_format, dest):
     }
 
     res = ctx.obj.select_all(table_name=viewname)
+    ctx.obj.close_db()
     if dest is None and file_format in export_in:
         click.echo(export_in[file_format](res))
     elif file_format in export_in:
@@ -144,7 +138,7 @@ def export_view(ctx, viewname, file_format, dest):
         click.echo(res)
 
 
-@click.command()
+@cli.command()
 @click.argument(
     "table-type", required=True, type=click.Choice(["table", "view", "all"])
 )
@@ -155,13 +149,26 @@ def list_def(ctx, table_type):
         res = ctx.obj.ls_entities()
     else:
         res = ctx.obj.ls_entities(entity_type=table_type)
+    ctx.obj.close_db()
     click.echo(res) if res else click.echo("Not found any " + table_type)
 
 
-cli.add_command(initialize_db)
-cli.add_command(update)
-cli.add_command(drop_tables)
-cli.add_command(drop_views)
-cli.add_command(create_views)
-cli.add_command(export_view)
-cli.add_command(list_def)
+@cli.command()
+@click.option(
+    "-o",
+    "dest",
+    type=click.File("w"),
+    help="Output file for dumped database in SQL format.",
+)
+@click.pass_context
+def dump(ctx, dest):
+    """Dump the entire database in SQL format. If a valid path is given write content to file."""
+    res = ctx.obj.dump_database()
+    ctx.obj.close_db()
+    if dest is None:
+        click.echo(res.getvalue())
+    else:
+        dest.write(res.getvalue())
+        dest.close()
+        click.echo("Dumped database in " + dest.name)
+    res.close()
