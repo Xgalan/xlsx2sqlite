@@ -81,9 +81,16 @@ class Xlsx2sqliteConfig(IniParser):
         "PATHS",
     ]
 
-    OPTIONAL_SECTIONS = {"HEADERS": None, "EXCLUDE": None}
+    OPTIONAL_SECTIONS = {"EXCLUDE": None}
 
-    MODEL_KEYWORDS = ["db_table", "columns", "primary_key", "unique", "not_null"]
+    MODEL_KEYWORDS = [
+        "db_table",
+        "columns",
+        "primary_key",
+        "unique",
+        "not_null",
+        "header",
+    ]
 
     def __init__(self, ini):
         super().__init__()

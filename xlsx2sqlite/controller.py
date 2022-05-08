@@ -64,7 +64,6 @@ class Controller:
         self._workbook = self._ini.get("xlsx_file")
         self._worksheets = self._ini.get_tables_names
         self._models = self._ini.get_models
-        self._config = dict(headers=self._ini.get_options()["HEADERS"])
 
     def update(self, subject):
         print(subject.log[-1])
@@ -108,7 +107,7 @@ class Controller:
                 workbook=self._workbook,
                 worksheet=tablename,
                 subset_cols=self._ini.get_columns_to_import,
-                headers=self._config["headers"],
+                header=self._models[tablename]["header"]
             )
         if self._models is not None:
             # retrieve rows

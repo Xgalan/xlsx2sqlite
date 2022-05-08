@@ -31,7 +31,7 @@ class Dataset:
         return self._tables[key]
 
     def create_dataset(
-        self, workbook=None, worksheet=None, subset_cols=None, headers=None
+        self, workbook=None, worksheet=None, subset_cols=None, header=None
     ):
         """Import the specified worksheet into the collection.
 
@@ -41,15 +41,16 @@ class Dataset:
         """
         table = im_ex.import_worksheet(workbook=workbook, worksheet=worksheet)
         for tbl_name, values in table.items():
-            if headers:
-                tablename = tbl_name.lower() + "_header"
-                if tablename in headers:
-                    row_nr = int(headers[tablename]) - 1
+            try:
+                if header is not None:
+                    row_nr = int(header[0]) - 1
                     if row_nr > 0:
                         values = values[row_nr:]
                     else:
                         print("Header row must be 1 or greater.")
-            header = values.pop(0)
-            self._tables[tbl_name] = self._dataset(*values, headers=header).subset(
-                cols=subset_cols[tbl_name]
-            )
+                headers = values.pop(0)
+                self._tables[tbl_name] = self._dataset(*values, headers=headers).subset(
+                    cols=subset_cols[tbl_name]
+                )
+            except TypeError:
+                print("Perhaps haven't you defined the header field on a model?")
