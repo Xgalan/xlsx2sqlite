@@ -86,7 +86,6 @@ API Reference
    :caption: Contents:
 
    installation.rst
-   usage.rst
    cli.rst
    controller.rst
    db_wrapper.rst
