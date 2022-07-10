@@ -47,3 +47,6 @@ docs/_build/
 # Databases
 *.sqlite
 *.sqlite3
+
+# Docker
+slim.report.json
