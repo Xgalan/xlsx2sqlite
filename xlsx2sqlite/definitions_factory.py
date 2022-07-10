@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
 
-import xlsx2sqlite.constraint_factory as constraint
-import xlsx2sqlite.field_factory as field
+from xlsx2sqlite.constraint_factory import *
 
 
 class Definitions:
@@ -42,7 +41,7 @@ class Definitions:
                 primary key column, the system chooses an integer value to use as the rowid
                 automatically.
                 """
-                self.primary_key = field.Field(
+                self.primary_key = Field(
                     field_name="id", field_type="INTEGER", definition="PrimaryKey"
                 )
             elif isinstance(self.pk, list):
@@ -51,29 +50,25 @@ class Definitions:
                         if key in set(self._fields):
                             pass
                         else:
-                            self.primary_key = field.Field(
+                            self.primary_key = Field(
                                 field_name=key,
                                 field_type="INTEGER",
                                 definition="NotNull",
                             )
                     # support for composite primary key
                     self.table_constraints.append(
-                        constraint.create_table_constraint(
-                            clause="PrimaryKey", columns=self.pk
-                        )
+                        create_table_constraint(clause="PrimaryKey", columns=self.pk)
                     )
                 else:
                     # set a custom name for the row_id alias
-                    self.primary_key = field.Field(
+                    self.primary_key = Field(
                         field_name=self.pk[0],
                         field_type="INTEGER",
                         definition="PrimaryKey",
                     )
             if self.unique_keys and isinstance(self.unique_keys, list):
                 self.table_constraints.append(
-                    constraint.create_table_constraint(
-                        clause="Unique", columns=self.unique_keys
-                    )
+                    create_table_constraint(clause="Unique", columns=self.unique_keys)
                 )
         except TypeError:
             print("Must declare headers and row.")
@@ -121,9 +116,7 @@ class Definitions:
         pk = None if self.pk is None else set(self.pk)
         not_null = None if self.not_null is None else set(self.not_null)
         fields = [
-            field.Field(
-                field_name=k, field_type=v["type"], definition=column_constraint(k)
-            )
+            Field(field_name=k, field_type=v["type"], definition=column_constraint(k))
             for k, v in self._fields.items()
         ]
         return fields

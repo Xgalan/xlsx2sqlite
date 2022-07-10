@@ -30,8 +30,6 @@ class Controller:
         # self._create_dataset = create_dataset or Dataset.create_dataset
         # self._collection = collection or Dataset
         self._db = database or DatabaseWrapper
-        self._config = {}
-        self._constraints = {}
         self._commands_stack = []
         if conf is not None:
             self.setup(conf=conf)
@@ -107,7 +105,7 @@ class Controller:
                 workbook=self._workbook,
                 worksheet=tablename,
                 subset_cols=self._ini.get_columns_to_import,
-                header=self._models[tablename]["header"]
+                header=self._models[tablename]["header"],
             )
         if self._models is not None:
             # retrieve rows
