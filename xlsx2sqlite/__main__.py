@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-from xlsx2sqlite.cli import cli
 
 
-def xlsx2sqlite():
-    cli(prog_name="xlsx2sqlite")
+def execute_xlsx2sqlite_cli():
+    from xlsx2sqlite.xlsx2sqlite import xlsx2sqlite
+    return xlsx2sqlite
 
 
-xlsx2sqlite()
+if __name__ == "__main__":
+    execute_xlsx2sqlite_cli()
