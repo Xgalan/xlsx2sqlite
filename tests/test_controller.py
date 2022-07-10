@@ -14,7 +14,7 @@ class TestController:
         """support for in-memory database"""
         self.ctrler = new_controller
         assert self.ctrler is not None
-        assert self.ctrler._config is not None
+        assert self.ctrler._ini is not None
         assert self.ctrler._ini.get("db_file") is None
         assert self.ctrler._ini.get("root_path") == "./tests/samples"
         assert self.ctrler.get_db_table_name("SalesOrders") == "Sales Orders"

@@ -105,7 +105,7 @@ class Controller:
                 workbook=self._workbook,
                 worksheet=tablename,
                 subset_cols=self._ini.get_columns_to_import,
-                header=self._models[tablename]["header"]
+                header=self._models[tablename]["header"],
             )
         if self._models is not None:
             # retrieve rows
