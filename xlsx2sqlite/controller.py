@@ -27,10 +27,7 @@ class Controller:
 
     def __init__(self, conf=None, database=None):
         self._collection = Dataset()
-        # self._create_dataset = create_dataset or Dataset.create_dataset
-        # self._collection = collection or Dataset
         self._db = database or DatabaseWrapper
-        self._commands_stack = []
         if conf is not None:
             self.setup(conf=conf)
         else:
@@ -69,11 +66,6 @@ class Controller:
     def close_db(self):
         """Close the connection to the database."""
         self._conn.close()
-
-    def execute(self):
-        with self._conn as db:
-            self._commands_stack.clear()
-            return
 
     def get_db_table_name(self, tablename):
         """Return the name to give to the database table.
@@ -127,14 +119,14 @@ class Controller:
 
         The collection contains tablib.Dataset instances.
         """
-        self._commands_stack.extend([self.create_table, self.insert_into])
+        commands = [self.create_table, self.insert_into]
         with self._conn as db:
             [
-                [command(tablename=name) for name in self._worksheets]
-                for command in self._commands_stack
+                [command(db=db, tablename=name) for name in self._worksheets]
+                for command in commands
             ]
 
-    def create_table(self, tablename=None):
+    def create_table(self, db=None, tablename=None):
         """Create a new table in the database.
 
         Retrieve the constraints if they exists, then generates the
@@ -142,22 +134,24 @@ class Controller:
         in the database.
         The table name must exists in the tables collection.
 
+        :key db: Connection object
         :key tablename: Name of the table to be created.
         """
         table = self.import_table(tablename)
-        self._conn.create_table(
+        db.create_table(
             tablename=table["definitions"].tablename,
             definitions=table["definitions"].prepare_sql(),
         )
 
-    def insert_into(self, tablename=None):
+    def insert_into(self, db=None, tablename=None):
         """Insert data into the declared table.
 
-        :param tablename: Name of the table to import from the xlsx file.
+        :key db: Connection object
+        :key tablename: Name of the table to import from the xlsx file.
         """
         table = self.import_table(tablename)
         fields = table["definitions"].get_fields()
-        self._conn.insert_into(
+        db.insert_into(
             tablename=self.get_db_table_name(tablename),
             fields=table["definitions"].get_labels(),
             args=self.COMMA_DELIM.join(len(fields) * "?"),
@@ -174,34 +168,34 @@ class Controller:
             "Primary Key not found on {}, REPLACE operation aborted.".format(tablename)
         )
 
-        table = self.import_table(tablename)
-        with self._conn as db:
-            if tablename in self._worksheets:
+        if tablename in self._worksheets:
+            table = self.import_table(tablename)
+            with self._conn as db:
                 db_table = self.get_db_table_name(tablename)
                 tinfo = db.table_info(tablename=db_table)
                 if tinfo == []:
                     return TABLE_NOT_FOUND
-            else:
-                return TABLE_NOT_FOUND
-            db_pk = [dict(i) for i in tinfo if dict(i)["pk"] == True][0]["name"]
-            columns = self._ini.get_columns_to_import[tablename]
-            if db_pk not in columns:
-                columns.insert(0, db_pk)
-            if table["definitions"].table_constraints is None:
-                return PRIMARYKEY_NOT_FOUND
-            # retrieve first row from new data
-            first_row = dict(zip(table["data"].headers, table["data"][0]))
-            fields = table["definitions"].get_fields()
-            # check if the primary key is in new data
-            if db_pk in first_row:
-                db.insert_or_replace(
-                    tablename=db_table,
-                    fields=table["definitions"].get_labels(),
-                    args=self.COMMA_DELIM.join(len(fields) * "?"),
-                    data=[v for v in table["data"]],
-                )
-            else:
-                return PRIMARYKEY_NOT_FOUND
+                db_pk = [dict(i) for i in tinfo if dict(i)["pk"] == True][0]["name"]
+                columns = self._ini.get_columns_to_import[tablename]
+                if db_pk not in columns:
+                    columns.insert(0, db_pk)
+                if table["definitions"].table_constraints is None:
+                    return PRIMARYKEY_NOT_FOUND
+                # retrieve first row from new data
+                first_row = dict(zip(table["data"].headers, table["data"][0]))
+                fields = table["definitions"].get_fields()
+                # check if the primary key is in new data
+                if db_pk in first_row:
+                    db.insert_or_replace(
+                        tablename=db_table,
+                        fields=table["definitions"].get_labels(),
+                        args=self.COMMA_DELIM.join(len(fields) * "?"),
+                        data=[v for v in table["data"]],
+                    )
+                else:
+                    return PRIMARYKEY_NOT_FOUND
+        else:
+            return TABLE_NOT_FOUND
 
     def drop_tables(self):
         """Drop all the database tables with a name in the list.
