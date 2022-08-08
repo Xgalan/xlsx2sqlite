@@ -40,6 +40,7 @@ class DatabaseWrapper(Subject):
         "replace": """REPLACE INTO `{tablename}` ({fields}) VALUES ({args});""",
         "select_from": "SELECT {columns} FROM `{from_table}`;",
         "table_info": "PRAGMA table_info(`{tablename}`);",
+        "database_list": "PRAGMA database_list;"
     }
 
     def __init__(self, path=None):
@@ -48,8 +49,10 @@ class DatabaseWrapper(Subject):
             self._conn = sqlite3.connect(
                 ":memory:", detect_types=sqlite3.PARSE_DECLTYPES
             )
+            self.__in_memory = True
         else:
             self._conn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
+            self.__in_memory = False
         self._log = []
 
     def __enter__(self):
@@ -74,6 +77,10 @@ class DatabaseWrapper(Subject):
     @property
     def log(self):
         return self._log
+    
+    @property
+    def is_in_memory(self):
+        return self.__in_memory
 
     @log.setter
     def log(self, message):

@@ -29,6 +29,7 @@ class Controller:
         self._collection = Dataset()
         self._db = database or DatabaseWrapper
         if conf is not None:
+            self._memory_db = False
             self.setup(conf=conf)
         else:
             raise ValueError
@@ -53,6 +54,8 @@ class Controller:
         self._ini = conf
         self._db_file = self._ini.get("db_file")
         self._conn = self._db(path=self._db_file)
+        if self._conn.is_in_memory is True:
+            self._memory_db = True
         # observer pattern
         self._conn.attach(self)
         self._views_path = self._ini.get("sql_views")

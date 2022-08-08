@@ -33,7 +33,8 @@ def test_create_views(disk_db_ini):
 def test_export_view(disk_db_ini):
     response1 = runner.invoke(
         cli,
-        [str(disk_db_ini), "export-view", "'Complex UTF-8 key value àèò§'"],
+        #[str(disk_db_ini), "export-view", "'Complex UTF-8 key value àèò§'"],
+        [str(disk_db_ini), "export-view", "units_lt_10", "-f", "json"],
     )
     assert response1.exit_code == 0
 
