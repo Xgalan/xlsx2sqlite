@@ -3,6 +3,7 @@
 """
 from pathlib import Path
 from io import StringIO
+from collections.abc import Callable
 from xlsx2sqlite.config import Xlsx2sqliteConfig
 from xlsx2sqlite.dataset import Dataset
 from xlsx2sqlite.db_wrapper import DatabaseWrapper
@@ -18,16 +19,18 @@ def new_controller(config: object) -> object:
     :returns: An instance of Controller
     :rtype: object
     """
-    return Controller(conf=Xlsx2sqliteConfig(config))
+    return Controller(
+        collection=Dataset, conf=Xlsx2sqliteConfig(config), database=DatabaseWrapper
+    )
 
 
 class Controller:
 
     COMMA_DELIM = ","
 
-    def __init__(self, conf=None, database=None):
-        self._collection = Dataset()
-        self._db = database or DatabaseWrapper
+    def __init__(self, collection: Callable, conf: object, database: object):
+        self._collection = collection()
+        self._db = database
         if conf is not None:
             self._memory_db = False
             self.setup(conf=conf)
@@ -44,7 +47,7 @@ class Controller:
 
         return wrapper
 
-    def setup(self, conf=None):
+    def setup(self, conf) -> None:
         """Creates a connection with the specified Sqlite3 database.
 
         :param conf: Full path of the configuration file, if no path is
