@@ -92,7 +92,7 @@ class Controller:
     def import_table(self, tablename=None):
         """Import the given table in the collection.
 
-        :param tablename: Name of the table to be imported.
+        :key tablename: Name of the table to be imported.
         :returns: A dict with data consisting in the rows imported from the xlsx file
                   and an instance of Definition class
         :rtype: dict
@@ -167,7 +167,7 @@ class Controller:
     def insert_or_replace(self, tablename=None):
         """Perform a REPLACE operation on the database.
 
-        :param tablename: Name of the table on which to perform the REPLACE operation.
+        :key tablename: Name of the table on which to perform the REPLACE operation.
         """
         TABLE_NOT_FOUND = "Table {} not found.".format(tablename)
         PRIMARYKEY_NOT_FOUND = (
@@ -204,32 +204,30 @@ class Controller:
             return TABLE_NOT_FOUND
 
     def drop_tables(self):
-        """Drop all the database tables with a name in the list.
-
-        :param tables_list: List of tables names to drop from the database.
-        """
+        """Drop all the database tables if the name is declared in the configuration file."""
         db_tables = [
             self.get_db_table_name(tablename) for tablename in self._worksheets
         ]
         with self._conn as db:
             [db.drop_entity(entity_name=t, entity_type="TABLE") for t in db_tables]
 
-    def drop_table(self, tablename=None):
-        """Drop the database table with the corresponding name.
+    def drop_table(self, db=None, tablename=None):
+        """Drop the database table with the corresponding worksheet name.
 
+        :key db: Connection object
         :key tablename: Name of the table to drop from the database.
         """
-        with self._conn as db:
-            db.drop_entity(entity_name=tablename, entity_type="TABLE")
+        t = self.get_db_table_name(tablename)
+        db.drop_entity(entity_name=t, entity_type="TABLE")
 
-    def create_view(self, viewname=None, select=None):
+    def create_view(self, db=None, viewname=None, select=None):
         """Create a database view.
 
+        :key db: Connection object
         :key viewname: Name of the view.
         :key select: `SELECT` query statement.
         """
-        with self._conn as db:
-            db.create_view(viewname=viewname, select=select)
+        db.create_view(viewname=viewname, select=select)
 
     def create_views(self):
         if self._views_path:
@@ -240,13 +238,13 @@ class Controller:
                     for f in list(p.glob("**/*.sql"))
                 ]
 
-    def drop_view(self, viewname=None):
+    def drop_view(self, db=None, viewname=None):
         """Drop the database view with the corresponding name.
 
+        :key db: Connection object
         :key viewname: Name of the view to drop from the database.
         """
-        with self._conn as db:
-            db.drop_entity(entity_name=viewname, entity_type="VIEW")
+        db.drop_entity(entity_name=viewname, entity_type="VIEW")
 
     def drop_views(self):
         """Drop all the views from the database."""

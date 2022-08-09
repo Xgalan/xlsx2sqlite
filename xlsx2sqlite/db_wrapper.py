@@ -62,6 +62,7 @@ class DatabaseWrapper(Subject):
         if exc_type is None:
             try:
                 self._conn.commit()
+                self.close()
             except:
                 print("Error while committing changes to the database.")
         elif exc_type is sqlite3.IntegrityError:
