@@ -40,7 +40,7 @@ class DatabaseWrapper(Subject):
         "replace": """REPLACE INTO `{tablename}` ({fields}) VALUES ({args});""",
         "select_from": "SELECT {columns} FROM `{from_table}`;",
         "table_info": "PRAGMA table_info(`{tablename}`);",
-        "database_list": "PRAGMA database_list;"
+        "database_list": "PRAGMA database_list;",
     }
 
     def __init__(self, path=None):
@@ -62,7 +62,6 @@ class DatabaseWrapper(Subject):
         if exc_type is None:
             try:
                 self._conn.commit()
-                self.close()
             except:
                 print("Error while committing changes to the database.")
         elif exc_type is sqlite3.IntegrityError:
@@ -78,7 +77,7 @@ class DatabaseWrapper(Subject):
     @property
     def log(self):
         return self._log
-    
+
     @property
     def is_in_memory(self):
         return self.__in_memory
