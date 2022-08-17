@@ -52,3 +52,6 @@ docs/_build/
 
 # Docker
 slim.report.json
+
+# temp
+db_operations.py

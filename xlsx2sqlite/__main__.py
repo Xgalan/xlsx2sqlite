@@ -3,6 +3,7 @@
 
 def execute_xlsx2sqlite_cli():
     from xlsx2sqlite.xlsx2sqlite import xlsx2sqlite
+
     return xlsx2sqlite
 
 

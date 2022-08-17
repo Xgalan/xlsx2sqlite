@@ -63,11 +63,15 @@ class DatabaseWrapper(Subject):
             try:
                 self._conn.commit()
             except:
-                print("Error while committing changes to the database.")
+                self.log = "Error while committing changes to the database."
         elif exc_type is sqlite3.IntegrityError:
             self.log = exc_val
             # silence exceptions by returning some True value.
             return True
+        elif exc_type is sqlite3.OperationalError:
+            self.log = exc_val
+            self._conn.rollback()
+            raise exc_type
         else:
             self.log = (exc_type, exc_val)
             if exc_traceb:
@@ -95,17 +99,19 @@ class DatabaseWrapper(Subject):
         """Returns the iterdump method."""
         return self._conn.iterdump()
 
-    def _execute(self, query, parameters, messages):
+    def _execute(self, query, parameters, messages, data=None, many=False):
         try:
-            q = query.format(**parameters)
-            if q.endswith(";;"):
-                q = q[:-1]
-            self._conn.execute(q)
+            if many is True:
+                self._conn.executemany(query.format(**parameters), data)
+            else:
+                q = query.format(**parameters)
+                if q.endswith(";;"):
+                    q = q[:-1]
+                self._conn.execute(q)
             # observer pattern
             self.log = messages["success"]
-        except sqlite3.OperationalError as e:
-            self._conn.rollback()
-            raise sqlite3.OperationalError(messages["error"] + str(e))
+        except:
+            print("Error from execute")
 
     def create_table(self, tablename=None, definitions=None):
         """Prepare and execute a CREATE TABLE sql query for a given table
@@ -176,15 +182,6 @@ class DatabaseWrapper(Subject):
         if entity_type in ["TABLE", "VIEW"]:
             self._execute(self.SQL_QUERY["drop_entity"], parameters, messages)
 
-    def _executemany(self, query, parameters, data, messages):
-        try:
-            self._conn.executemany(query.format(**parameters), data)
-            # observer pattern
-            self.log = messages["success"]
-        except sqlite3.OperationalError as e:
-            self._conn.rollback()
-            raise sqlite3.OperationalError(str(e))
-
     def insert_into(self, tablename=None, fields=None, args=None, data=None):
         """Populate the given table with data from the collection.
 
@@ -196,7 +193,9 @@ class DatabaseWrapper(Subject):
         """
         parameters = {"tablename": tablename, "fields": fields, "args": args}
         messages = {"success": "Data inserted into table: {}".format(tablename)}
-        self._executemany(self.SQL_QUERY["insert_into"], parameters, data, messages)
+        self._execute(
+            self.SQL_QUERY["insert_into"], parameters, messages, data=data, many=True
+        )
 
     def insert_or_replace(self, tablename=None, fields=None, args=None, data=None):
         """Perform a `REPLACE` operation on the database.
@@ -209,7 +208,9 @@ class DatabaseWrapper(Subject):
         """
         parameters = {"tablename": tablename, "fields": fields, "args": args}
         messages = {"success": "Updated table: {}".format(tablename)}
-        self._executemany(self.SQL_QUERY["replace"], parameters, data, messages)
+        self._execute(
+            self.SQL_QUERY["replace"], parameters, messages, data=data, many=True
+        )
 
     def table_info(self, tablename=None):
         """Executes a `PRAGMA` query on the database.

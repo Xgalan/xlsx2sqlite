@@ -26,6 +26,7 @@ setuptools.setup(
     author="Erik Mascheri",
     author_email="erik.mascheri@gmail.com",
     license="GPLv3",
+    keywords="xlsx2sqlite, sqlite3",
     description="Generate a Sqlite3 database from a Office Open XML file.",
     long_description=open("README.rst").read(),
     long_description_content_type="text/x-rst",
