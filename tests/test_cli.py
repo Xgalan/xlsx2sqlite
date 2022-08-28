@@ -53,7 +53,10 @@ def test_list_def(disk_db_ini):
 
 
 def test_replace(disk_db_ini):
-    response1 = runner.invoke(cli, [str(disk_db_ini), "update", "SalesOrders"])
+    run = CliRunner()
+    run.isolated_filesystem(temp_dir="/tmp")
+    run.invoke(cli, [str(disk_db_ini), "initialize-db"])
+    response1 = run.invoke(cli, [str(disk_db_ini), "update", "SalesOrders"])
     assert response1.exit_code == 0
 
 

@@ -3,22 +3,12 @@
 """
 from pathlib import Path
 from io import StringIO
-from pprint import pformat
 from collections.abc import Callable
 from xlsx2sqlite.config import Xlsx2sqliteConfig
 from xlsx2sqlite.dataset import Dataset
+from xlsx2sqlite.db_wrapper import DatabaseWrapper
 from xlsx2sqlite.definitions_factory import Definitions
 from xlsx2sqlite.import_export import export_worksheet
-from xlsx2sqlite.db_operations import (
-    CreateTable,
-    CreateView,
-    DropEntity,
-    InsertInto,
-    Replace,
-    Select,
-    TableInfo,
-    Transaction,
-)
 
 __all__ = ["new_controller"]
 
@@ -30,7 +20,7 @@ def new_controller(config: object) -> object:
     :rtype: object
     """
     return Controller(
-        collection=Dataset, conf=Xlsx2sqliteConfig(config), database=Transaction
+        collection=Dataset, conf=Xlsx2sqliteConfig(config), database=DatabaseWrapper
     )
 
 
@@ -66,7 +56,6 @@ class Controller:
         """
         self._ini = conf
         self._db_file = self._ini.get("db_file")
-        self._log_file = self._ini.get("log_file")
         self._conn = self._db(path=self._db_file)
         if self._conn.is_in_memory is True:
             self._memory_db = True
@@ -78,11 +67,7 @@ class Controller:
         self._models = self._ini.get_models
 
     def update(self, subject):
-        "Observer pattern"
-        if self._log_file:
-            with open(self._log_file, mode="a") as f:
-                f.write(pformat(subject.log[-1]))
-                f.close()
+        print(subject.log[-1])
 
     def close_db(self):
         """Close the connection to the database."""
@@ -140,26 +125,44 @@ class Controller:
 
         The collection contains tablib.Dataset instances.
         """
+        commands = [self.create_table, self.insert_into]
         with self._conn as db:
-            for ws in self._worksheets:
-                table = self.import_table(ws)
-                db.execute(
-                    CreateTable(
-                        connection=db,
-                        tablename=table["definitions"].tablename,
-                        definitions=table["definitions"].prepare_sql(),
-                    )
-                )
-                fields = table["definitions"].get_fields()
-                db.executemany(
-                    InsertInto(
-                        connection=db,
-                        tablename=self.get_db_table_name(ws),
-                        fields=table["definitions"].get_labels(),
-                        args=self.COMMA_DELIM.join(len(fields) * "?"),
-                    ),
-                    data=[v for v in table["data"]],
-                )
+            [
+                [command(db=db, tablename=name) for name in self._worksheets]
+                for command in commands
+            ]
+
+    def create_table(self, db=None, tablename=None):
+        """Create a new table in the database.
+
+        Retrieve the constraints if they exists, then generates the
+        definitions for the SQL query, finally creates the table
+        in the database.
+        The table name must exists in the tables collection.
+
+        :key db: Connection object
+        :key tablename: Name of the table to be created.
+        """
+        table = self.import_table(tablename)
+        db.create_table(
+            tablename=table["definitions"].tablename,
+            definitions=table["definitions"].prepare_sql(),
+        )
+
+    def insert_into(self, db=None, tablename=None):
+        """Insert data into the declared table.
+
+        :key db: Connection object
+        :key tablename: Name of the table to import from the xlsx file.
+        """
+        table = self.import_table(tablename)
+        fields = table["definitions"].get_fields()
+        db.insert_into(
+            tablename=self.get_db_table_name(tablename),
+            fields=table["definitions"].get_labels(),
+            args=self.COMMA_DELIM.join(len(fields) * "?"),
+            data=[v for v in table["data"]],
+        )
 
     def insert_or_replace(self, tablename=None):
         """Perform a REPLACE operation on the database.
@@ -175,9 +178,7 @@ class Controller:
             table = self.import_table(tablename)
             with self._conn as db:
                 db_table = self.get_db_table_name(tablename)
-                tinfo = db.execute(
-                    TableInfo(connection=db, tablename=db_table)
-                ).fetchall()
+                tinfo = db.table_info(tablename=db_table)
                 if tinfo == []:
                     return TABLE_NOT_FOUND
                 db_pk = [dict(i) for i in tinfo if dict(i)["pk"] == True][0]["name"]
@@ -191,13 +192,10 @@ class Controller:
                 fields = table["definitions"].get_fields()
                 # check if the primary key is in new data
                 if db_pk in first_row:
-                    db.executemany(
-                        Replace(
-                            connection=db,
-                            tablename=db_table,
-                            fields=table["definitions"].get_labels(),
-                            args=self.COMMA_DELIM.join(len(fields) * "?"),
-                        ),
+                    db.insert_or_replace(
+                        tablename=db_table,
+                        fields=table["definitions"].get_labels(),
+                        args=self.COMMA_DELIM.join(len(fields) * "?"),
                         data=[v for v in table["data"]],
                     )
                 else:
@@ -211,54 +209,42 @@ class Controller:
             self.get_db_table_name(tablename) for tablename in self._worksheets
         ]
         with self._conn as db:
-            [
-                db.execute(
-                    DropEntity(connection=db, entity_name=t, entity_type="TABLE")
-                )
-                for t in db_tables
-            ]
+            [db.drop_entity(entity_name=t, entity_type="TABLE") for t in db_tables]
 
-    def drop_table(self, tablename=None):
+    def drop_table(self, db=None, tablename=None):
         """Drop the database table with the corresponding worksheet name.
 
         :key db: Connection object
         :key tablename: Name of the table to drop from the database.
         """
         t = self.get_db_table_name(tablename)
-        with self._conn as db:
-            db.execute(DropEntity(connection=db, entity_name=t, entity_type="TABLE"))
+        db.drop_entity(entity_name=t, entity_type="TABLE")
 
-    def create_view(self, viewname=None, select=None):
+    def create_view(self, db=None, viewname=None, select=None):
         """Create a database view.
 
         :key db: Connection object
         :key viewname: Name of the view.
         :key select: `SELECT` query statement.
         """
-        with self._conn as db:
-            db.execute(CreateView(connection=db, viewname=viewname, select=select))
+        db.create_view(viewname=viewname, select=select)
 
     def create_views(self):
         if self._views_path:
             p = Path(self._views_path)
             with self._conn as db:
                 [
-                    db.execute(
-                        CreateView(connection=db, viewname=f.stem, select=f.read_text())
-                    )
+                    db.create_view(viewname=f.stem, select=f.read_text())
                     for f in list(p.glob("**/*.sql"))
                 ]
 
-    def drop_view(self, viewname=None):
+    def drop_view(self, db=None, viewname=None):
         """Drop the database view with the corresponding name.
 
         :key db: Connection object
         :key viewname: Name of the view to drop from the database.
         """
-        with self._conn as db:
-            db.execute(
-                DropEntity(connection=db, entity_name=viewname, entity_type="VIEW")
-            )
+        db.drop_entity(entity_name=viewname, entity_type="VIEW")
 
     def drop_views(self):
         """Drop all the views from the database."""
@@ -266,12 +252,7 @@ class Controller:
             p = Path(self._views_path)
             with self._conn as db:
                 viewnames = [f.stem for f in list(p.glob("**/*.sql"))]
-                [
-                    db.execute(
-                        DropEntity(connection=db, entity_name=v, entity_type="VIEW")
-                    )
-                    for v in viewnames
-                ]
+                [db.drop_entity(entity_name=v, entity_type="VIEW") for v in viewnames]
 
     def select_all(self, table_name=None, where_clause=None):
         """Perform a `SELECT *` SQL query on the database.
@@ -286,7 +267,7 @@ class Controller:
         with self._conn as db:
             if where_clause:
                 parameters["where"] = where_clause
-            q = db.execute(Select(connection=db, **parameters)).fetchall()
+            q = db.select(**parameters)
             if q:
                 results = self._dataset(*[tuple(row) for row in q], headers=q[0].keys())
         return results

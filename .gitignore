@@ -42,6 +42,7 @@ nosetests.xml
 .pydevproject
 .vscode
 slim.report.json
+*.log
 
 # Sphinx documentation
 docs/_build/
@@ -52,6 +53,3 @@ docs/_build/
 
 # Docker
 slim.report.json
-
-# temp
-db_operations.py
