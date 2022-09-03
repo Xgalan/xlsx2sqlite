@@ -284,6 +284,15 @@ class Controller:
         parameters = {"from_table": table_name}
         results = None
         with self._conn as db:
+            if self._memory_db and table_name in self._worksheets:
+                table = self.import_table(table_name)
+                db.execute(
+                    CreateTable(
+                        connection=db,
+                        tablename=table["definitions"].tablename,
+                        definitions=table["definitions"].prepare_sql(),
+                    )
+                )
             if where_clause:
                 parameters["where"] = where_clause
             q = db.execute(Select(connection=db, **parameters)).fetchall()
