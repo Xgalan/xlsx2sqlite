@@ -228,16 +228,6 @@ class Controller:
         with self._conn as db:
             db.execute(DropEntity(connection=db, entity_name=t, entity_type="TABLE"))
 
-    def create_view(self, viewname=None, select=None):
-        """Create a database view.
-
-        :key db: Connection object
-        :key viewname: Name of the view.
-        :key select: `SELECT` query statement.
-        """
-        with self._conn as db:
-            db.execute(CreateView(connection=db, viewname=viewname, select=select))
-
     def create_views(self):
         if self._views_path:
             p = Path(self._views_path)
@@ -248,17 +238,6 @@ class Controller:
                     )
                     for f in list(p.glob("**/*.sql"))
                 ]
-
-    def drop_view(self, viewname=None):
-        """Drop the database view with the corresponding name.
-
-        :key db: Connection object
-        :key viewname: Name of the view to drop from the database.
-        """
-        with self._conn as db:
-            db.execute(
-                DropEntity(connection=db, entity_name=viewname, entity_type="VIEW")
-            )
 
     def drop_views(self):
         """Drop all the views from the database."""
@@ -293,6 +272,27 @@ class Controller:
                         definitions=table["definitions"].prepare_sql(),
                     )
                 )
+                db.executemany(
+                    InsertInto(
+                        connection=db,
+                        tablename=self.get_db_table_name(table_name),
+                        fields=table["definitions"].get_labels(),
+                        args=self.COMMA_DELIM.join(
+                            len(table["definitions"].get_fields()) * "?"
+                        ),
+                    ),
+                    data=[v for v in table["data"]],
+                )
+                if self._views_path:
+                    p = Path(self._views_path)
+                    [
+                        db.execute(
+                            CreateView(
+                                connection=db, viewname=f.stem, select=f.read_text()
+                            )
+                        )
+                        for f in list(p.glob("**/*.sql"))
+                    ]
             if where_clause:
                 parameters["where"] = where_clause
             q = db.execute(Select(connection=db, **parameters)).fetchall()
