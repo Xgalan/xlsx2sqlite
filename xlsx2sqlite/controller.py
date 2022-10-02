@@ -7,7 +7,6 @@ from pprint import pformat
 from collections.abc import Callable
 from xlsx2sqlite.config import Xlsx2sqliteConfig
 from xlsx2sqlite.dataset import Dataset
-from xlsx2sqlite.definitions_factory import Definitions
 from xlsx2sqlite.import_export import export_worksheet
 from xlsx2sqlite.db_operations import (
     CreateTable,
@@ -123,14 +122,10 @@ class Controller:
         if self._models is not None:
             # retrieve rows
             table = self.get(tablename)
-            # create definitions
-            d = Definitions(
-                name=self.get_db_table_name(tablename),
-                headers=table.headers,
-                row=table[0],
-                model=self._models[tablename],
-            )
-            return {"data": table, "definitions": d}
+            self._models[tablename]["headers"] = table.headers
+            self._models[tablename]["first_row"] = table[0]
+            self._models[tablename]["db_table_name"] = self.get_db_table_name(tablename)
+            return {"data": table, "model": self._models[tablename]}
         else:
             raise ValueError
 
@@ -143,20 +138,11 @@ class Controller:
         with self._conn as db:
             for ws in self._worksheets:
                 table = self.import_table(ws)
-                db.execute(
-                    CreateTable(
-                        connection=db,
-                        tablename=table["definitions"].tablename,
-                        definitions=table["definitions"].prepare_sql(),
-                    )
-                )
-                fields = table["definitions"].get_fields()
+                db.execute(CreateTable(connection=db, model=table["model"]))
                 db.executemany(
                     InsertInto(
                         connection=db,
-                        tablename=self.get_db_table_name(ws),
-                        fields=table["definitions"].get_labels(),
-                        args=self.COMMA_DELIM.join(len(fields) * "?"),
+                        model=table["model"],
                     ),
                     data=[v for v in table["data"]],
                 )
@@ -184,23 +170,21 @@ class Controller:
                 columns = self._ini.get_columns_to_import[tablename]
                 if db_pk not in columns:
                     columns.insert(0, db_pk)
-                if table["definitions"].table_constraints is None:
-                    return PRIMARYKEY_NOT_FOUND
-                # retrieve first row from new data
-                first_row = dict(zip(table["data"].headers, table["data"][0]))
-                fields = table["definitions"].get_fields()
-                # check if the primary key is in new data
-                if db_pk in first_row:
-                    db.executemany(
-                        Replace(
-                            connection=db,
-                            tablename=db_table,
-                            fields=table["definitions"].get_labels(),
-                            args=self.COMMA_DELIM.join(len(fields) * "?"),
-                        ),
-                        data=[v for v in table["data"]],
-                    )
-                else:
+                try:
+                    # retrieve first row from new data
+                    first_row = dict(zip(table["data"].headers, table["data"][0]))
+                    # check if the primary key is in new data
+                    if db_pk in first_row:
+                        db.executemany(
+                            Replace(
+                                connection=db,
+                                model=table["model"],
+                            ),
+                            data=[v for v in table["data"]],
+                        )
+                    else:
+                        return PRIMARYKEY_NOT_FOUND
+                except ValueError:
                     return PRIMARYKEY_NOT_FOUND
         else:
             return TABLE_NOT_FOUND
@@ -263,36 +247,27 @@ class Controller:
         parameters = {"from_table": table_name}
         results = None
         with self._conn as db:
-            if self._memory_db and table_name in self._worksheets:
+            if table_name in self._worksheets:
                 table = self.import_table(table_name)
-                db.execute(
-                    CreateTable(
-                        connection=db,
-                        tablename=table["definitions"].tablename,
-                        definitions=table["definitions"].prepare_sql(),
-                    )
-                )
-                db.executemany(
-                    InsertInto(
-                        connection=db,
-                        tablename=self.get_db_table_name(table_name),
-                        fields=table["definitions"].get_labels(),
-                        args=self.COMMA_DELIM.join(
-                            len(table["definitions"].get_fields()) * "?"
+                if self._memory_db:
+                    db.execute(CreateTable(connection=db, model=table["model"]))
+                    db.executemany(
+                        InsertInto(
+                            connection=db,
+                            model=table["model"],
                         ),
-                    ),
-                    data=[v for v in table["data"]],
-                )
-                if self._views_path:
-                    p = Path(self._views_path)
-                    [
-                        db.execute(
-                            CreateView(
-                                connection=db, viewname=f.stem, select=f.read_text()
+                        data=[v for v in table["data"]],
+                    )
+                    if self._views_path:
+                        p = Path(self._views_path)
+                        [
+                            db.execute(
+                                CreateView(
+                                    connection=db, viewname=f.stem, select=f.read_text()
+                                )
                             )
-                        )
-                        for f in list(p.glob("**/*.sql"))
-                    ]
+                            for f in list(p.glob("**/*.sql"))
+                        ]
             if where_clause:
                 parameters["where"] = where_clause
             q = db.execute(Select(connection=db, **parameters)).fetchall()

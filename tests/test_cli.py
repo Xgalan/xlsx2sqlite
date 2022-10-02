@@ -43,8 +43,21 @@ def test_export_view(disk_db_ini):
         cli,
         [str(disk_db_ini), "export-view", "Complex UTF-8 key value àèò§", "-f", "csv"],
     )
+    response3 = run.invoke(
+        cli,
+        [
+            str(disk_db_ini),
+            "export-view",
+            "Complex UTF-8 key value àèò§",
+            "-f",
+            "xlsx",
+            "-o",
+            "/tmp/dest.xlsx",
+        ],
+    )
     assert response1.exit_code == 0
     assert response2.exit_code == 0
+    assert response3.exit_code == 0
 
 
 def test_list_def(disk_db_ini):

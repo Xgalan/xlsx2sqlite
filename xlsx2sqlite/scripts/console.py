@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from xlsx2sqlite.cli import cli
+from xlsx2sqlite.cli import cli  # pragma: no cover
 
 
-def console():
+def console():  # pragma: no cover
     cli(prog_name="xlsx2sqlite")

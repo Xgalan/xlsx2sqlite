@@ -4,6 +4,8 @@ import sqlite3.dump
 from abc import ABC, abstractmethod
 from contextlib import suppress
 
+from xlsx2sqlite.definitions_factory import Definitions
+
 
 class Subject:
     def __init__(self):
@@ -36,6 +38,9 @@ def best_fts_version():
 
 
 class SqlOperation(ABC):
+
+    COMMA_DELIM = ","
+
     def __init__(self, connection, **kwargs):
         self._conn = connection
         self.kwargs = dict(**kwargs)
@@ -68,18 +73,20 @@ class CreateTable(SqlOperation):
 
         CREATE TABLE IF NOT EXISTS tablename (definitions);
 
-    :key tablename: Name of the table to be created.
-    :key definitions: Definitions as accepted by the Sqlite3 SQL
-                      query dialect.
+    :key model: model of the data to be replaced.
     """
 
     def _get_sql_string(self) -> str:
         return "CREATE TABLE IF NOT EXISTS `{name}` ({definitions});"
 
     def _prepare(self) -> str:
+        # create definitions
+        definitions = Definitions(
+            model=self.kwargs["model"],
+        )
         parameters = {
-            "name": self.kwargs["tablename"],
-            "definitions": self.kwargs["definitions"],
+            "name": definitions.tablename,
+            "definitions": definitions.prepare_sql(),
         }
         return self._prepare_sql(parameters)
 
@@ -144,21 +151,21 @@ class DropEntity(SqlOperation):
 class InsertInto(SqlOperation):
     """Populate the given table with data from the collection.
 
-    :key tablename: Name of the table to insert values into.
-    :key fields: List of fields as accepted by the SQL language of Sqlite3.
-    :key args: SQL arguments of the query.
-    :key data: List of values to be passed as arguments
-               to the SQL statement.
+    :key model: model of the data to be replaced.
     """
 
     def _get_sql_string(self) -> str:
         return "INSERT INTO `{tablename}` ({fields}) VALUES ({args});"
 
     def _prepare(self) -> str:
+        # create definitions
+        definitions = Definitions(
+            model=self.kwargs["model"],
+        )
         parameters = {
-            "tablename": self.kwargs["tablename"],
-            "fields": self.kwargs["fields"],
-            "args": self.kwargs["args"],
+            "tablename": definitions.tablename,
+            "fields": definitions.get_labels(),
+            "args": self.COMMA_DELIM.join(len(definitions.get_fields()) * "?"),
         }
         return self._prepare_sql(parameters)
 
@@ -166,21 +173,23 @@ class InsertInto(SqlOperation):
 class Replace(SqlOperation):
     """Perform a `REPLACE` operation on the database.
 
-    :key tablename: Name of the table to insert values into.
-    :key fields: List of fields as accepted by the SQL language of Sqlite3.
-    :key args: SQL arguments of the query.
-    :key data: List of values to be passed as arguments
-               to the SQL statement.
+    :key model: model of the data to be replaced.
     """
 
     def _get_sql_string(self) -> str:
         return """REPLACE INTO `{tablename}` ({fields}) VALUES ({args});"""
 
     def _prepare(self) -> str:
+        # create definitions
+        definitions = Definitions(
+            model=self.kwargs["model"],
+        )
+        if definitions.table_constraints is None:
+            raise ValueError
         parameters = {
-            "tablename": self.kwargs["tablename"],
-            "fields": self.kwargs["fields"],
-            "args": self.kwargs["args"],
+            "tablename": definitions.tablename,
+            "fields": definitions.get_labels(),
+            "args": self.COMMA_DELIM.join(len(definitions.get_fields()) * "?"),
         }
         return self._prepare_sql(parameters)
 
@@ -311,7 +320,11 @@ class Transaction(Subject):
         return self._conn.execute(sql_query)
 
     def executemany(self, operation, data=None) -> sqlite3.Cursor:
-        """Execute SQL query and return a ``sqlite3.Cursor``."""
+        """Execute SQL query and return a ``sqlite3.Cursor``.
+
+        :key data: List of values to be passed as arguments
+                   to the SQL statement.
+        """
         if data is not None:
             sql_query = str(operation)
             self.log = sql_query
