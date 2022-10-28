@@ -9,7 +9,7 @@ from xlsx2sqlite.db_operations import (
     InsertInto,
     Replace,
     Select,
-    TableInfo,
+    Pragma,
     Transaction,
 )
 
@@ -71,21 +71,21 @@ class TestTransaction:
     def test_create_table(self, inmemory_db, model):
         self.test_createdb(inmemory_db)
         with self.db as db:
-            db.execute(CreateTable(connection=db, model=model))
+            db.run(CreateTable(connection=db, model=model))
             parameters = {
                 "columns": "'id','col1','col2','col3','col4'",
                 "from_table": self.NAME,
             }
-            rows = db.execute(Select(connection=db, **parameters)).fetchall()
+            rows = db.run(Select(connection=db, **parameters)).fetchall()
             db.close()
         assert rows == []
 
     def test_insert_into(self, inmemory_db, model, fake_data):
         self.test_createdb(inmemory_db)
         with self.db as db:
-            db.execute(CreateTable(connection=db, model=model))
-            db.executemany(InsertInto(connection=db, model=model), data=fake_data)
-            s = db.execute(Select(connection=db, from_table=self.NAME)).fetchall()
+            db.run(CreateTable(connection=db, model=model))
+            db.run(InsertInto(connection=db, model=model), data=fake_data)
+            s = db.run(Select(connection=db, from_table=self.NAME)).fetchall()
             db.close()
         res = [row for row in s]
         assert any(res)
@@ -94,16 +94,16 @@ class TestTransaction:
     def test_create_view(self, inmemory_db, model, fake_data):
         self.test_createdb(inmemory_db)
         with self.db as db:
-            db.execute(CreateTable(connection=db, model=model))
-            db.executemany(InsertInto(connection=db, model=model), data=fake_data)
-            db.execute(
+            db.run(CreateTable(connection=db, model=model))
+            db.run(InsertInto(connection=db, model=model), data=fake_data)
+            db.run(
                 CreateView(
                     connection=db,
                     viewname=self.VIEWNAME,
                     select="SELECT * FROM {0}".format(self.NAME),
                 )
             )
-            s = db.execute(Select(connection=db, from_table=self.VIEWNAME)).fetchall()
+            s = db.run(Select(connection=db, from_table=self.VIEWNAME)).fetchall()
             db.close()
         res = [row for row in s]
         assert tuple(res[1]) == (2, "test2", "Some", float(2.2), 6)
@@ -111,20 +111,20 @@ class TestTransaction:
     def test_drop_entity(self, inmemory_db, model, fake_data):
         self.test_createdb(inmemory_db)
         with self.db as db:
-            db.execute(CreateTable(connection=db, model=model))
-            db.executemany(InsertInto(connection=db, model=model), data=fake_data)
-            db.execute(
+            db.run(CreateTable(connection=db, model=model))
+            db.run(InsertInto(connection=db, model=model), data=fake_data)
+            db.run(
                 CreateView(
                     connection=db,
                     viewname=self.VIEWNAME,
                     select="SELECT * FROM {0}".format(self.NAME),
                 )
             )
-            db.execute(
+            db.run(
                 DropEntity(connection=db, entity_name=self.VIEWNAME, entity_type="VIEW")
             )
-            res = db.execute(
-                TableInfo(connection=db, tablename=self.VIEWNAME)
+            res = db.run(
+                Pragma(connection=db, pragma="table_info", tablename=self.VIEWNAME)
             ).fetchall()
             db.close()
         assert res == []
@@ -132,9 +132,9 @@ class TestTransaction:
     def test_select(self, inmemory_db, model, fake_data):
         self.test_createdb(inmemory_db)
         with self.db as db:
-            db.execute(CreateTable(connection=db, model=model))
-            db.executemany(InsertInto(connection=db, model=model), data=fake_data)
-            s = db.execute(Select(connection=db, from_table=self.NAME)).fetchall()
+            db.run(CreateTable(connection=db, model=model))
+            db.run(InsertInto(connection=db, model=model), data=fake_data)
+            s = db.run(Select(connection=db, from_table=self.NAME)).fetchall()
             db.close()
         res = [row for row in s]
         assert any(res)

@@ -3,6 +3,7 @@ import sqlite3
 import sqlite3.dump
 from abc import ABC, abstractmethod
 from contextlib import suppress
+from typing import Dict
 
 from xlsx2sqlite.definitions_factory import Definitions
 
@@ -194,7 +195,7 @@ class Replace(SqlOperation):
         return self._prepare_sql(parameters)
 
 
-class TableInfo(SqlOperation):
+class Pragma(SqlOperation):
     """Executes a `PRAGMA` query on the database.
 
     The query executed is in this form:
@@ -202,14 +203,23 @@ class TableInfo(SqlOperation):
     .. code-block:: sql
 
         PRAGMA table_info(tablename);
+        PRAGMA database_list;
 
+    :key pragma: pragma operation to execute, can be "table_info" or "database_list"
     :key tablename: Name of the table.
     :returns: A sqlite3 cursor containing the results of the query, if any.
     :rtype: object
     """
 
     def _get_sql_string(self) -> str:
-        return "PRAGMA table_info(`{tablename}`);"
+        SQL_STRING = {
+            "table_info": "PRAGMA table_info(`{tablename}`);",
+            "database_list": "PRAGMA database_list;",
+        }
+        if self.kwargs["pragma"]:
+            return SQL_STRING[self.kwargs["pragma"]]
+        else:
+            raise KeyError
 
     def _prepare(self) -> str:
         return self._prepare_sql({"tablename": self.kwargs["tablename"]})
@@ -258,25 +268,20 @@ class Transaction(Subject):
                in memory database.
     """
 
-    DATABASE_LIST = "PRAGMA database_list;"
+    __shared_state: Dict[str, str] = {}  # Borg design pattern, shared state
 
-    def __init__(self, path=None):
+    def __init__(self, path=None) -> None:
+        self.__dict__ = self.__shared_state
         super().__init__()
         self.path = path
         self._log = []
-        self.__in_memory = False
-        if path is None:
-            self.__in_memory = True
+        self.__in_memory = False if path else True
 
     def __enter__(self):
-        if self.__in_memory is True:
-            self._conn = sqlite3.connect(
-                ":memory:", detect_types=sqlite3.PARSE_DECLTYPES
-            )
-        else:
-            self._conn = sqlite3.connect(
-                self.path, detect_types=sqlite3.PARSE_DECLTYPES
-            )
+        self._conn = sqlite3.connect(
+            ":memory:" if self.__in_memory else self.path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+        )
         self._conn.row_factory = sqlite3.Row
         return self
 
@@ -313,24 +318,22 @@ class Transaction(Subject):
         self._log.append(message)
         self.notify()
 
-    def execute(self, operation) -> sqlite3.Cursor:
-        """Execute SQL query and return a ``sqlite3.Cursor``."""
-        sql_query = str(operation)
-        self.log = sql_query
-        return self._conn.execute(sql_query)
+    def run(self, operation, data=None) -> sqlite3.Cursor:
+        """Execute operation on the database.
 
-    def executemany(self, operation, data=None) -> sqlite3.Cursor:
-        """Execute SQL query and return a ``sqlite3.Cursor``.
-
+        :param operation: SQL query to execute
         :key data: List of values to be passed as arguments
                    to the SQL statement.
+        :returns: a ``sqlite3.Cursor``
+        :rtype: sqlite3.Cursor
         """
-        if data is not None:
-            sql_query = str(operation)
-            self.log = sql_query
-            return self._conn.executemany(sql_query, data)
-        else:
-            raise ValueError
+        sql_query = str(operation)
+        self.log = sql_query
+        return (
+            self._conn.execute(sql_query)
+            if data is None
+            else self._conn.executemany(sql_query, data)
+        )
 
     def close(self):
         """Closes the connection to the database."""

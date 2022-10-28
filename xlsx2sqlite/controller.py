@@ -15,7 +15,7 @@ from xlsx2sqlite.db_operations import (
     InsertInto,
     Replace,
     Select,
-    TableInfo,
+    Pragma,
     Transaction,
 )
 
@@ -67,8 +67,7 @@ class Controller:
         self._db_file = self._ini.get("db_file")
         self._log_file = self._ini.get("log_file")
         self._conn = self._db(path=self._db_file)
-        if self._conn.is_in_memory is True:
-            self._memory_db = True
+        self._memory_db = True if self._conn.is_in_memory else False
         # observer pattern
         self._conn.attach(self)
         self._views_path = self._ini.get("sql_views")
@@ -97,11 +96,7 @@ class Controller:
         :rtype: string
         """
         db_table = self._ini.get_db_tables_names[tablename]
-        if isinstance(db_table, list):
-            db_table = db_table[0]
-        else:
-            db_table = tablename
-        return db_table
+        return db_table[0] if isinstance(db_table, list) else tablename
 
     def import_table(self, tablename=None):
         """Import the given table in the collection.
@@ -138,8 +133,8 @@ class Controller:
         with self._conn as db:
             for ws in self._worksheets:
                 table = self.import_table(ws)
-                db.execute(CreateTable(connection=db, model=table["model"]))
-                db.executemany(
+                db.run(CreateTable(connection=db, model=table["model"]))
+                db.run(
                     InsertInto(
                         connection=db,
                         model=table["model"],
@@ -161,8 +156,8 @@ class Controller:
             table = self.import_table(tablename)
             with self._conn as db:
                 db_table = self.get_db_table_name(tablename)
-                tinfo = db.execute(
-                    TableInfo(connection=db, tablename=db_table)
+                tinfo = db.run(
+                    Pragma(connection=db, pragma="table_info", tablename=db_table)
                 ).fetchall()
                 if tinfo == []:
                     return TABLE_NOT_FOUND
@@ -175,7 +170,7 @@ class Controller:
                     first_row = dict(zip(table["data"].headers, table["data"][0]))
                     # check if the primary key is in new data
                     if db_pk in first_row:
-                        db.executemany(
+                        db.run(
                             Replace(
                                 connection=db,
                                 model=table["model"],
@@ -196,9 +191,7 @@ class Controller:
         ]
         with self._conn as db:
             [
-                db.execute(
-                    DropEntity(connection=db, entity_name=t, entity_type="TABLE")
-                )
+                db.run(DropEntity(connection=db, entity_name=t, entity_type="TABLE"))
                 for t in db_tables
             ]
 
@@ -210,14 +203,14 @@ class Controller:
         """
         t = self.get_db_table_name(tablename)
         with self._conn as db:
-            db.execute(DropEntity(connection=db, entity_name=t, entity_type="TABLE"))
+            db.run(DropEntity(connection=db, entity_name=t, entity_type="TABLE"))
 
     def create_views(self):
         if self._views_path:
             p = Path(self._views_path)
             with self._conn as db:
                 [
-                    db.execute(
+                    db.run(
                         CreateView(connection=db, viewname=f.stem, select=f.read_text())
                     )
                     for f in list(p.glob("**/*.sql"))
@@ -230,9 +223,7 @@ class Controller:
             with self._conn as db:
                 viewnames = [f.stem for f in list(p.glob("**/*.sql"))]
                 [
-                    db.execute(
-                        DropEntity(connection=db, entity_name=v, entity_type="VIEW")
-                    )
+                    db.run(DropEntity(connection=db, entity_name=v, entity_type="VIEW"))
                     for v in viewnames
                 ]
 
@@ -250,8 +241,8 @@ class Controller:
             if table_name in self._worksheets:
                 table = self.import_table(table_name)
                 if self._memory_db:
-                    db.execute(CreateTable(connection=db, model=table["model"]))
-                    db.executemany(
+                    db.run(CreateTable(connection=db, model=table["model"]))
+                    db.run(
                         InsertInto(
                             connection=db,
                             model=table["model"],
@@ -261,7 +252,7 @@ class Controller:
                     if self._views_path:
                         p = Path(self._views_path)
                         [
-                            db.execute(
+                            db.run(
                                 CreateView(
                                     connection=db, viewname=f.stem, select=f.read_text()
                                 )
@@ -270,7 +261,7 @@ class Controller:
                         ]
             if where_clause:
                 parameters["where"] = where_clause
-            q = db.execute(Select(connection=db, **parameters)).fetchall()
+            q = db.run(Select(connection=db, **parameters)).fetchall()
             if q:
                 results = self._dataset(*[tuple(row) for row in q], headers=q[0].keys())
         return results
