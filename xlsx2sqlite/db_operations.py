@@ -64,6 +64,92 @@ class SqlOperation(ABC):
         raise NotImplementedError("You should implement this!")
 
 
+class Transaction(Subject):
+    """Class that interface with sqlite3 standard library module.
+
+    Creates a database connection.
+
+    :key path: Full path of the database, if the full path isn't
+               specified the class will instantiate a sqlite3
+               in memory database.
+    """
+
+    __shared_state: Dict[str, str] = {}  # Borg design pattern, shared state
+
+    def __init__(self, path=None) -> None:
+        self.__dict__ = self.__shared_state
+        super().__init__()
+        self.path = path
+        self._log = []
+        self.__in_memory = False if path else True
+
+    def __enter__(self):
+        self._conn = sqlite3.connect(
+            ":memory:" if self.__in_memory else self.path,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+        )
+        self._conn.row_factory = sqlite3.Row
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_traceb):
+        if exc_type is None:
+            try:
+                self._conn.commit()
+            except:
+                self.log = "Error while committing changes to the database."
+        elif exc_type is sqlite3.IntegrityError:
+            self.log = exc_val
+            # silence exceptions by returning some True value.
+            return True
+        elif exc_type is sqlite3.OperationalError:
+            self.log = exc_val
+            self._conn.rollback()
+            raise exc_type
+        else:
+            self.log = (exc_type, exc_val)
+            if exc_traceb:
+                self.log = exc_traceb
+            raise exc_type
+
+    @property
+    def log(self):
+        return self._log
+
+    @property
+    def is_in_memory(self):
+        return self.__in_memory
+
+    @log.setter
+    def log(self, message):
+        self._log.append(message)
+        self.notify()
+
+    def run(self, operation, data=None) -> sqlite3.Cursor:
+        """Execute operation on the database.
+
+        :param operation: SQL query to execute
+        :key data: List of values to be passed as arguments
+                   to the SQL statement.
+        :returns: a ``sqlite3.Cursor``
+        :rtype: sqlite3.Cursor
+        """
+        sql_query = str(operation)
+        self.log = sql_query
+        return (
+            self._conn.execute(sql_query)
+            if data is None
+            else self._conn.executemany(sql_query, data)
+        )
+
+    def close(self):
+        """Closes the connection to the database."""
+        self._conn.close()
+
+    def iterdump(self):
+        """Returns the iterdump method."""
+        return self._conn.iterdump()
+
+
 class CreateTable(SqlOperation):
     """Prepare and execute a CREATE TABLE sql query for a given table
     instance.
@@ -256,89 +342,3 @@ class Select(SqlOperation):
             "where": self.kwargs["where"] if "where" in self.kwargs.keys() else None,
         }
         return self._prepare_sql(conditions)
-
-
-class Transaction(Subject):
-    """Class that interface with sqlite3 standard library module.
-
-    Creates a database connection.
-
-    :key path: Full path of the database, if the full path isn't
-               specified the class will instantiate a sqlite3
-               in memory database.
-    """
-
-    __shared_state: Dict[str, str] = {}  # Borg design pattern, shared state
-
-    def __init__(self, path=None) -> None:
-        self.__dict__ = self.__shared_state
-        super().__init__()
-        self.path = path
-        self._log = []
-        self.__in_memory = False if path else True
-
-    def __enter__(self):
-        self._conn = sqlite3.connect(
-            ":memory:" if self.__in_memory else self.path,
-            detect_types=sqlite3.PARSE_DECLTYPES,
-        )
-        self._conn.row_factory = sqlite3.Row
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_traceb):
-        if exc_type is None:
-            try:
-                self._conn.commit()
-            except:
-                self.log = "Error while committing changes to the database."
-        elif exc_type is sqlite3.IntegrityError:
-            self.log = exc_val
-            # silence exceptions by returning some True value.
-            return True
-        elif exc_type is sqlite3.OperationalError:
-            self.log = exc_val
-            self._conn.rollback()
-            raise exc_type
-        else:
-            self.log = (exc_type, exc_val)
-            if exc_traceb:
-                self.log = exc_traceb
-            raise exc_type
-
-    @property
-    def log(self):
-        return self._log
-
-    @property
-    def is_in_memory(self):
-        return self.__in_memory
-
-    @log.setter
-    def log(self, message):
-        self._log.append(message)
-        self.notify()
-
-    def run(self, operation, data=None) -> sqlite3.Cursor:
-        """Execute operation on the database.
-
-        :param operation: SQL query to execute
-        :key data: List of values to be passed as arguments
-                   to the SQL statement.
-        :returns: a ``sqlite3.Cursor``
-        :rtype: sqlite3.Cursor
-        """
-        sql_query = str(operation)
-        self.log = sql_query
-        return (
-            self._conn.execute(sql_query)
-            if data is None
-            else self._conn.executemany(sql_query, data)
-        )
-
-    def close(self):
-        """Closes the connection to the database."""
-        self._conn.close()
-
-    def iterdump(self):
-        """Returns the iterdump method."""
-        return self._conn.iterdump()
