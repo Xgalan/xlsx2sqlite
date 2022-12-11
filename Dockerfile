@@ -9,7 +9,7 @@ RUN python -m venv /usr/src/app/venv
 
 ENV PATH="/usr/src/app/venv/bin:$PATH"
 
-RUN pip install --no-cache-dir --editable . \
+RUN pip install --no-cache-dir . \
     && pip install -I 'nuitka>0.7,<0.8'
 
 

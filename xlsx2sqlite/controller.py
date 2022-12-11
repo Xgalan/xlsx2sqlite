@@ -133,14 +133,10 @@ class Controller:
         with self._conn as db:
             for ws in self._worksheets:
                 table = self.import_table(ws)
-                db.run(CreateTable(connection=db, model=table["model"]))
-                db.run(
-                    InsertInto(
-                        connection=db,
-                        model=table["model"],
-                    ),
-                    data=[v for v in table["data"]],
-                )
+                op1 = CreateTable(db, model=table["model"])
+                op1.run()
+                op2 = InsertInto(db, model=table["model"])
+                op2.run(data=[v for v in table["data"]])
 
     def insert_or_replace(self, tablename=None):
         """Perform a REPLACE operation on the database.
@@ -156,12 +152,11 @@ class Controller:
             table = self.import_table(tablename)
             with self._conn as db:
                 db_table = self.get_db_table_name(tablename)
-                tinfo = db.run(
-                    Pragma(connection=db, pragma="table_info", tablename=db_table)
-                ).fetchall()
-                if tinfo == []:
+                tinfo = Pragma(db, pragma="table_info", tablename=db_table)
+                s = tinfo.run().fetchall()
+                if s == []:
                     return TABLE_NOT_FOUND
-                db_pk = [dict(i) for i in tinfo if dict(i)["pk"] == True][0]["name"]
+                db_pk = [dict(i) for i in s if dict(i)["pk"] == True][0]["name"]
                 columns = self._ini.get_columns_to_import[tablename]
                 if db_pk not in columns:
                     columns.insert(0, db_pk)
@@ -170,13 +165,8 @@ class Controller:
                     first_row = dict(zip(table["data"].headers, table["data"][0]))
                     # check if the primary key is in new data
                     if db_pk in first_row:
-                        db.run(
-                            Replace(
-                                connection=db,
-                                model=table["model"],
-                            ),
-                            data=[v for v in table["data"]],
-                        )
+                        replace = Replace(db, model=table["model"])
+                        replace.run(data=[v for v in table["data"]])
                     else:
                         return PRIMARYKEY_NOT_FOUND
                 except ValueError:
@@ -190,10 +180,9 @@ class Controller:
             self.get_db_table_name(tablename) for tablename in self._worksheets
         ]
         with self._conn as db:
-            [
-                db.run(DropEntity(connection=db, entity_name=t, entity_type="TABLE"))
-                for t in db_tables
-            ]
+            for t in db_tables:
+                op = DropEntity(db, entity_name=t, entity_type="TABLE")
+                op.run()
 
     def drop_table(self, tablename=None):
         """Drop the database table with the corresponding worksheet name.
@@ -203,29 +192,24 @@ class Controller:
         """
         t = self.get_db_table_name(tablename)
         with self._conn as db:
-            db.run(DropEntity(connection=db, entity_name=t, entity_type="TABLE"))
+            ope = DropEntity(db, entity_name=t, entity_type="TABLE")
+            ope.run()
 
     def create_views(self):
         if self._views_path:
-            p = Path(self._views_path)
             with self._conn as db:
-                [
-                    db.run(
-                        CreateView(connection=db, viewname=f.stem, select=f.read_text())
-                    )
-                    for f in list(p.glob("**/*.sql"))
-                ]
+                for f in list(Path(self._views_path).glob("**/*.sql")):
+                    op = CreateView(db, viewname=f.stem, select=f.read_text())
+                    op.run()
 
     def drop_views(self):
         """Drop all the views from the database."""
         if self._views_path:
-            p = Path(self._views_path)
             with self._conn as db:
-                viewnames = [f.stem for f in list(p.glob("**/*.sql"))]
-                [
-                    db.run(DropEntity(connection=db, entity_name=v, entity_type="VIEW"))
-                    for v in viewnames
-                ]
+                viewnames = [f.stem for f in list(Path(self._views_path).glob("**/*.sql"))]
+                for v in viewnames:
+                    op = DropEntity(db, entity_name=v, entity_type="VIEW")
+                    op.run()
 
     def select_all(self, table_name=None, where_clause=None):
         """Perform a `SELECT *` SQL query on the database.
@@ -241,27 +225,18 @@ class Controller:
             if table_name in self._worksheets:
                 table = self.import_table(table_name)
                 if self._memory_db:
-                    db.run(CreateTable(connection=db, model=table["model"]))
-                    db.run(
-                        InsertInto(
-                            connection=db,
-                            model=table["model"],
-                        ),
-                        data=[v for v in table["data"]],
-                    )
+                    op1 = CreateTable(db, model=table["model"])
+                    op1.run()
+                    op2 = InsertInto(db, model=table["model"])
+                    op2.run(data=[v for v in table["data"]])
                     if self._views_path:
-                        p = Path(self._views_path)
-                        [
-                            db.run(
-                                CreateView(
-                                    connection=db, viewname=f.stem, select=f.read_text()
-                                )
-                            )
-                            for f in list(p.glob("**/*.sql"))
-                        ]
+                        for f in list(Path(self._views_path).glob("**/*.sql")):
+                            op = CreateView(db, viewname=f.stem, select=f.read_text())
+                            op.run()
             if where_clause:
                 parameters["where"] = where_clause
-            q = db.run(Select(connection=db, **parameters)).fetchall()
+            op3 = Select(db, **parameters)
+            q = op3.run().fetchall()
             if q:
                 results = self._dataset(*[tuple(row) for row in q], headers=q[0].keys())
         return results

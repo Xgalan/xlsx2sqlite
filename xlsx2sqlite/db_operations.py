@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
+
 import sqlite3
 import sqlite3.dump
 from abc import ABC, abstractmethod
@@ -42,8 +44,8 @@ class SqlOperation(ABC):
 
     COMMA_DELIM = ","
 
-    def __init__(self, connection, **kwargs):
-        self._conn = connection
+    def __init__(self, db, **kwargs) -> None:
+        self._conn = db._conn
         self.kwargs = dict(**kwargs)
 
     def __str__(self) -> str:
@@ -54,6 +56,21 @@ class SqlOperation(ABC):
         if q.endswith(";;"):
             q = q[:-1]
         return q
+
+    def run(self, data=None) -> sqlite3.Cursor:
+        """Execute operation on the database.
+
+        :key data: List of values to be passed as arguments
+                   to the SQL statement.
+        :returns: a ``sqlite3.Cursor``
+        :rtype: sqlite3.Cursor
+        """
+        sql_query = str(self)
+        return (
+            self._conn.execute(sql_query)
+            if data is None
+            else self._conn.executemany(sql_query, data)
+        )
 
     @abstractmethod
     def _get_sql_string(self) -> str:
@@ -83,7 +100,7 @@ class Transaction(Subject):
         self._log = []
         self.__in_memory = False if path else True
 
-    def __enter__(self):
+    def __enter__(self): #TODO: if returns self._conn it return the connection object directly, move other methods to SqlOperation class
         self._conn = sqlite3.connect(
             ":memory:" if self.__in_memory else self.path,
             detect_types=sqlite3.PARSE_DECLTYPES,
@@ -123,23 +140,6 @@ class Transaction(Subject):
     def log(self, message):
         self._log.append(message)
         self.notify()
-
-    def run(self, operation, data=None) -> sqlite3.Cursor:
-        """Execute operation on the database.
-
-        :param operation: SQL query to execute
-        :key data: List of values to be passed as arguments
-                   to the SQL statement.
-        :returns: a ``sqlite3.Cursor``
-        :rtype: sqlite3.Cursor
-        """
-        sql_query = str(operation)
-        self.log = sql_query
-        return (
-            self._conn.execute(sql_query)
-            if data is None
-            else self._conn.executemany(sql_query, data)
-        )
 
     def close(self):
         """Closes the connection to the database."""
