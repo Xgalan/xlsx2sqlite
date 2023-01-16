@@ -5,24 +5,29 @@ import sqlite3
 import sqlite3.dump
 from abc import ABC, abstractmethod
 from contextlib import suppress
-from typing import Dict
+from typing import Dict, Protocol
 
 from xlsx2sqlite.definitions_factory import Definitions
 
 
-class Subject:
-    def __init__(self):
-        self._observers = []
+class Observer(Protocol):
+    def update(self, subject: Subject) -> None:
+        pass
 
-    def attach(self, observer):
+
+class Subject:
+    def __init__(self) -> None:
+        self._observers: list[Observer] = []
+
+    def attach(self, observer: Observer) -> None:
         if observer not in self._observers:
             self._observers.append(observer)
 
-    def detach(self, observer):
+    def detach(self, observer) -> None:
         with suppress(ValueError):
             self._observers.remove(observer)
 
-    def notify(self, modifier=None):
+    def notify(self, modifier: Observer | None = None) -> None:
         for observer in self._observers:
             if modifier != observer:
                 observer.update(self)
@@ -100,7 +105,9 @@ class Transaction(Subject):
         self._log = []
         self.__in_memory = False if path else True
 
-    def __enter__(self): #TODO: if returns self._conn it return the connection object directly, move other methods to SqlOperation class
+    def __enter__(
+        self,
+    ):  # TODO: if returns self._conn it return the connection object directly, move other methods to SqlOperation class
         self._conn = sqlite3.connect(
             ":memory:" if self.__in_memory else self.path,
             detect_types=sqlite3.PARSE_DECLTYPES,
@@ -132,14 +139,14 @@ class Transaction(Subject):
     def log(self):
         return self._log
 
-    @property
-    def is_in_memory(self):
-        return self.__in_memory
-
     @log.setter
     def log(self, message):
         self._log.append(message)
         self.notify()
+
+    @property
+    def is_in_memory(self):
+        return self.__in_memory
 
     def close(self):
         """Closes the connection to the database."""

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from pathlib import Path
+
 import pytest
 
 sys.dont_write_bytecode = True

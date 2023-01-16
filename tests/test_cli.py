@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from click.testing import CliRunner
+
 from xlsx2sqlite.cli import cli
 
 runner = CliRunner()

@@ -1,17 +1,9 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-
-from xlsx2sqlite.db_operations import (
-    CreateTable,
-    CreateView,
-    DropEntity,
-    InsertInto,
-    Replace,
-    Select,
-    Pragma,
-    Transaction,
-)
+from xlsx2sqlite.db_operations import (CreateTable, CreateView, DropEntity,
+                                       InsertInto, Pragma, Replace, Select,
+                                       Transaction)
 
 
 @pytest.fixture()
@@ -104,7 +96,9 @@ class TestTransaction:
             # prepare
             op0 = CreateTable(db, model=model)
             op1 = InsertInto(db, model=model)
-            op2 = CreateView(db, viewname=self.VIEWNAME, select="SELECT * FROM {0}".format(self.NAME))
+            op2 = CreateView(
+                db, viewname=self.VIEWNAME, select="SELECT * FROM {0}".format(self.NAME)
+            )
             op3 = Select(db, from_table=self.VIEWNAME)
             # execute
             op0.run()
@@ -121,7 +115,9 @@ class TestTransaction:
             # prepare
             op0 = CreateTable(db, model=model)
             op1 = InsertInto(db, model=model)
-            op2 = CreateView(db, viewname=self.VIEWNAME, select="SELECT * FROM {0}".format(self.NAME))
+            op2 = CreateView(
+                db, viewname=self.VIEWNAME, select="SELECT * FROM {0}".format(self.NAME)
+            )
             op3 = DropEntity(db, entity_name=self.VIEWNAME, entity_type="VIEW")
             op4 = Pragma(db, pragma="table_info", tablename=self.VIEWNAME)
             # execute

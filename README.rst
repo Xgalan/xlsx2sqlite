@@ -95,7 +95,7 @@ and `Tablib <http://docs.python-tablib.org/en/latest/>`_.
 Compatibility
 -------------
 
-`xlsx2sqlite` is compatible with Python 3.6+.
+`xlsx2sqlite` is compatible with Python 3.7+.
 
 Licence
 -------
