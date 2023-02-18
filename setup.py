@@ -26,6 +26,7 @@ setuptools.setup(
     author="Erik Mascheri",
     author_email="erik.mascheri@gmail.com",
     license="GPLv3",
+    keywords="xlsx2sqlite, sqlite3",
     description="Generate a Sqlite3 database from a Office Open XML file.",
     long_description=open("README.rst").read(),
     long_description_content_type="text/x-rst",
@@ -43,16 +44,17 @@ setuptools.setup(
         "code_audit": ["black", "isort"],
     },
     include_package_data=True,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
     entry_points={
         "console_scripts": [

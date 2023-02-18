@@ -11,17 +11,14 @@ class Definitions:
 
     def __init__(
         self,
-        name=None,
-        headers=None,
-        row=None,
         model=None,
     ):
         try:
-            if headers is None or row is None:
+            if model is None:
                 raise TypeError
-            self.tablename = name
-            self.headers = headers
-            self.row = row
+            self.tablename = model["db_table_name"]
+            self.headers = model["headers"]
+            self.row = model["first_row"]
             self.unique_keys = model["unique"]
             self.pk = model["primary_key"]
             self.not_null = model["not_null"]
@@ -45,7 +42,7 @@ class Definitions:
                     field_name="id", field_type="INTEGER", definition="PrimaryKey"
                 )
             elif isinstance(self.pk, list):
-                if any(set(self.pk) & set(headers)):
+                if any(set(self.pk) & set(self.headers)):
                     for key in self.pk:
                         if key in set(self._fields):
                             pass

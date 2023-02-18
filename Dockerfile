@@ -1,4 +1,4 @@
-FROM python:3.7.13-slim-bullseye as base
+FROM python:3.7.16-slim-bullseye as base
 
 WORKDIR /usr/src/app
 
@@ -9,11 +9,12 @@ RUN python -m venv /usr/src/app/venv
 
 ENV PATH="/usr/src/app/venv/bin:$PATH"
 
-RUN pip install --no-cache-dir --editable . \
-    && pip install -I 'nuitka>0.7,<0.8'
+RUN pip install --no-cache-dir . \
+    && pip install -I 'nuitka>0.8,<0.9' \
+    && pip install zstandard ordered-set
 
 
-FROM python:3.7.13-slim-bullseye as build
+FROM python:3.7.16-slim-bullseye as build
 
 RUN apt-get update -y \
     && apt-get install --no-install-recommends -y \
@@ -58,7 +59,7 @@ RUN python -m nuitka \
     && upx -9 xlsx2sqlite
 
 
-FROM python:3.7.13-slim-bullseye
+FROM python:3.7.16-slim-bullseye
 
 ARG USER_ID
 ARG GROUP_ID

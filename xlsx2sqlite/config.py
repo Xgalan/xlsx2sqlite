@@ -65,7 +65,7 @@ class IniParser:
         :returns: All the options retrieved from the INI file.
         :rtype: dict
         """
-        self._parser.read(ini)
+        self._parser.read(ini, encoding='UTF8')
         self._inipath = ini
         self.options = {
             section: dict(self._parser[section]) for section in self._parser.sections()
