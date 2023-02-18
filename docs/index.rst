@@ -88,9 +88,8 @@ API Reference
    installation.rst
    cli.rst
    controller.rst
-   db_wrapper.rst
+   db_operations.rst
    constraint_factory.rst
-   field_factory.rst
    import_export.rst
 
 
