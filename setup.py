@@ -42,6 +42,7 @@ setuptools.setup(
         "docs": ["Sphinx", "sphinx-click>=2.7,<3.1", "sphinx-rtd-theme==1.0.0"],
         "tests": ["pytest>=6,<7", "coverage", "pytest-cov", "pytest-random-order"],
         "code_audit": ["black", "isort"],
+        "compile": ["wheel", "nuitka", "zstandard", "build", "twine"],
     },
     include_package_data=True,
     python_requires=">=3.7",
